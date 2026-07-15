@@ -30,8 +30,10 @@ has crisp pixels, limited palettes, and readable silhouettes.
 | `frontend/` | Electron + React + TypeScript desktop app |
 | `docs/` | Architecture, research, user guide, troubleshooting |
 | `scripts/` | Setup and development scripts |
-| `configs/` | Default configuration files |
-| `examples/` | Example palettes, prompts, and projects |
+| `examples/` | Example palettes and prompts |
+
+Configuration is centralized in `backend/src/pixelforge/config/settings.py` (env-overridable via
+`PIXELFORGE_*` variables) and `frontend/src/shared/config.ts`.
 
 Key documents: [ARCHITECTURE.md](ARCHITECTURE.md) · [DECISIONS.md](DECISIONS.md) ·
 [ROADMAP.md](ROADMAP.md) · [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -52,12 +54,15 @@ cd frontend && npm install && npm run dev
 ```
 
 Without the `[ml]` extra installed, the backend runs with a deterministic **mock generation
-backend** — useful for UI development and CI. Install `[ml]` (PyTorch + diffusers) and download
-weights via `scripts/download_models.py` for real generation.
+backend** — useful for UI development and CI. Install `[ml]` (PyTorch + diffusers) for real
+generation; FLUX.1-schnell weights download automatically on first use.
 
 ## Development Status
 
-Phase 1 (foundation) is implemented; see [ROADMAP.md](ROADMAP.md) for the milestone plan.
+Phase 1 (foundation): backend generation pipeline, palette/style/mode systems, exporters,
+job queue and API, Electron/React shell with generation UI and pixel editor, tests, and CI.
+See [ROADMAP.md](ROADMAP.md) for what's next (real-model quality pass, animation orchestration,
+training/dataset tools, editor depth, packaging).
 
 ## License
 

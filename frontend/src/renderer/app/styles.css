@@ -1,0 +1,355 @@
+/* PixelForge dark theme. All colors flow through these variables. */
+:root {
+  --bg: #101014;
+  --bg-panel: #17171d;
+  --bg-elevated: #1f1f27;
+  --border: #2b2b36;
+  --text: #e8e8ee;
+  --text-dim: #9a9aa8;
+  --accent: #e4632a;
+  --accent-hover: #f07a42;
+  --success: #4caf7d;
+  --danger: #d84c4c;
+  --radius: 6px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Inter", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 8px 16px;
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-title {
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+}
+
+.app-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.app-nav button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.app-nav button.active {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.backend-status {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.backend-status.online {
+  color: var(--success);
+}
+
+.backend-status.offline {
+  color: var(--danger);
+}
+
+.app-main {
+  flex: 1;
+  overflow: hidden;
+}
+
+.generate-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  height: 100%;
+}
+
+.panel {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.panel h2 {
+  margin: 0 0 12px;
+  font-size: 15px;
+}
+
+.field {
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.field input,
+.field select,
+.field textarea {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.field-row {
+  display: flex;
+  gap: 8px;
+}
+
+.field-row .field {
+  flex: 1;
+}
+
+.primary-button {
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  padding: 10px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: var(--accent-hover);
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.results {
+  padding: 16px;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.job-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.job-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.job-status {
+  text-transform: uppercase;
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.job-status.completed {
+  color: var(--success);
+}
+
+.job-status.failed,
+.job-status.cancelled {
+  color: var(--danger);
+}
+
+.job-status.running,
+.job-status.queued {
+  color: var(--accent);
+}
+
+.progress-bar {
+  height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  overflow: hidden;
+  flex: 1;
+}
+
+.progress-bar > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+.result-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.result-image {
+  image-rendering: pixelated;
+  width: 128px;
+  height: 128px;
+  object-fit: contain;
+  background:
+    conic-gradient(#26262e 90deg, #1c1c22 90deg 180deg, #26262e 180deg 270deg, #1c1c22 270deg)
+    0 0 / 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.small-button {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.small-button:hover {
+  border-color: var(--accent);
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: 56px 1fr 220px;
+  height: 100%;
+}
+
+.toolbar {
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 4px;
+}
+
+.tool-button {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.tool-button.active {
+  background: var(--bg-elevated);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.canvas-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: var(--bg);
+}
+
+.editor-canvas {
+  image-rendering: pixelated;
+  background:
+    conic-gradient(#26262e 90deg, #1c1c22 90deg 180deg, #26262e 180deg 270deg, #1c1c22 270deg)
+    0 0 / 16px 16px;
+  border: 1px solid var(--border);
+  cursor: crosshair;
+}
+
+.sidebar {
+  background: var(--bg-panel);
+  border-left: 1px solid var(--border);
+  padding: 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.layer-row.active {
+  background: var(--bg-elevated);
+  border-color: var(--border);
+}
+
+.palette-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.swatch.selected {
+  outline: 2px solid var(--accent);
+}
+
+.error-text {
+  color: var(--danger);
+  font-size: 12px;
+}
