@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pixelforge"
+version = "0.1.0"
+description = "AI-native pixel art generation backend"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "pydantic>=2.6",
+    "pydantic-settings>=2.2",
+    "pillow>=10.2",
+    "numpy>=1.26",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+ml = [
+    "torch>=2.2",
+    "diffusers>=0.31",
+    "transformers>=4.44",
+    "accelerate>=0.30",
+    "safetensors>=0.4",
+    "sentencepiece>=0.2",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "httpx>=0.27",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pixelforge"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+# Depends() in argument defaults is the idiomatic FastAPI pattern.
+"src/pixelforge/api/**" = ["B008"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+check_untyped_defs = true
+ignore_missing_imports = true
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
