@@ -22,6 +22,7 @@ from pathlib import Path
 from PIL import Image
 
 from pixelforge.config import get_settings
+from pixelforge.core.errors import UnknownRegistryKeyError
 from pixelforge.core.models import DitherMode, GenerationRequest
 from pixelforge.exporters.base import ExportAsset, ExportOptions
 from pixelforge.exporters.registry import get_exporter, list_exporters
@@ -193,7 +194,11 @@ def main(argv: list[str] | None = None) -> int:
         "list": _cmd_list,
         "system": _cmd_system,
     }
-    return handlers[args.command](args)
+    try:
+        return handlers[args.command](args)
+    except UnknownRegistryKeyError as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

@@ -81,6 +81,12 @@ def test_export_spritesheet(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     assert all(Path(p).exists() for p in payload["files"])
 
 
+def test_unknown_palette_fails_cleanly(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["generate", "x", "--palette", "does-not-exist", "-o", str(tmp_path), "--quiet"])
+    assert code == 2
+    assert "unknown palette" in capsys.readouterr().err
+
+
 def test_list_and_system(capsys: pytest.CaptureFixture[str]) -> None:
     for what in ("modes", "styles", "palettes", "export-formats", "backends"):
         assert main(["list", what]) == 0
