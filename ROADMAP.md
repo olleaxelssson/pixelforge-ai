@@ -38,10 +38,36 @@
 - Performance profiling, memory budgets, resumable jobs across restarts
 - User guide completion, troubleshooting matrix, v1.0 release
 
-## Proposed direction — Agentic pixel-art layer (M7+, under review)
-A planning-and-critique agent layer over the existing deterministic pipeline: a typed Scene Graph,
-backend-agnostic `PlanningBackend` runtime (with a deterministic mock), character memory, palette
-intelligence, and a Pixel QA engine + AI critic. Phase 0 research and the synthesized architecture
-proposal live in [docs/research/agentic-pixel-art-research.md](docs/research/agentic-pixel-art-research.md);
-Phase 1 (per-subsystem ADRs) begins after review. This layer is additive and must not regress the
-current pipeline or CI.
+## Agentic pixel-art layer (M7+) — Phase 1 designed, implementation gated on review
+
+A planning-and-critique agent layer over the existing deterministic pipeline. Research:
+[docs/research/agentic-pixel-art-research.md](docs/research/agentic-pixel-art-research.md).
+Per-subsystem ADRs: [docs/adr/](docs/adr/) (D-009…D-014). Every milestone below is **additive,
+flag-gated, mock-tested, and must not regress the current pipeline or CI**. Sequencing puts the
+cheapest/most-decoupled value first and freezes plugin interfaces last.
+
+### M7 — Scene Graph + agent runtime foundation (D-009, D-010)
+- `core/scene_graph.py` (versioned pydantic) + JSON-Schema export for the frontend
+- `PlanningBackend` interface + `MockPlanningBackend`; agent base, registry, DAG runtime
+- Intent + Art Director agents → `plan_compiler.py` producing today's `DiffusionSpec`
+- "Fast path" toggle; end-to-end on the mock backend, fully tested (first implementation slice)
+
+### M8 — Palette Intelligence (D-012)
+- Deterministic color math: ranking, WCAG + CIEDE2000 contrast, CVD simulation, readability, dedup,
+  compression, suggestions; API + palette-panel surfacing (high value, low risk, no models)
+
+### M9 — Pixel QA engine (D-013)
+- Deterministic defect detectors + safe auto-repair; `MockCritic`; bounded region-repair loop
+- Golden-set threshold calibration; QA findings stored on the Scene Graph
+
+### M10 — Character Memory (D-011)
+- Character store + reference frames + identity embeddings; IP-Adapter Tier-1 path + palette lock
+- Measured drift gate feeding the QA loop; "Elias winter armor / without helmet" scenario tests
+
+### M11 — Full planning agent set + provenance
+- Composition / Silhouette / Lighting / Material / Animation planners; provenance sidecar per asset
+- Silhouette/pose → ControlNet conditioning; cross-frame consistency for animation
+
+### M12 — Plugin SDK & marketplace architecture (D-014)
+- Entry-point plugin loader + manifest; stabilized, versioned extension interfaces; sample plugins
+- Developer docs (contracts, versioning, security); frontend extension slots
