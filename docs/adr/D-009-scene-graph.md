@@ -1,6 +1,8 @@
 # D-009: Scene Graph — schema & lifecycle
 
-- **Status:** Proposed (Phase 1 design; pending review)
+- **Status:** Accepted — foundation implemented in M7 (`core/scene_graph.py`,
+  `generation/plan_compiler.py`); parts/QA/animation slots and editor lifecycle land in later
+  milestones.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** `docs/research/agentic-pixel-art-research.md`; builds on D-002 (hybrid pipeline),

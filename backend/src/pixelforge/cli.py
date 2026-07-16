@@ -21,6 +21,11 @@ from pathlib import Path
 
 from PIL import Image
 
+from pixelforge.agents.planning_backends.registry import (
+    get_planning_backend,
+    list_planning_backends,
+)
+from pixelforge.agents.runtime import PlanningRuntime
 from pixelforge.config import get_settings
 from pixelforge.core.errors import UnknownRegistryKeyError
 from pixelforge.core.models import DitherMode, GenerationRequest
@@ -28,6 +33,7 @@ from pixelforge.exporters.base import ExportAsset, ExportOptions
 from pixelforge.exporters.registry import get_exporter, list_exporters
 from pixelforge.generation.backends.registry import list_backends
 from pixelforge.generation.pipeline import GenerationPipeline
+from pixelforge.generation.plan_compiler import compile_prompt
 from pixelforge.models_manager.device import device_info
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.service import PaletteService
@@ -66,8 +72,23 @@ def _build_parser() -> argparse.ArgumentParser:
     exp.add_argument("--name", default="sprite", help="Base name for exported files")
     exp.add_argument("-o", "--output-dir", default=".")
 
+    pln = sub.add_parser("plan", help="Produce the Scene Graph plan for a prompt (no image)")
+    pln.add_argument("prompt")
+    pln.add_argument("--mode", default="text-to-pixel")
+    pln.add_argument("--style", default="modern-indie")
+    pln.add_argument("--size", default="32", help="WIDTHxHEIGHT or a single number (e.g. 32x48)")
+    pln.add_argument("--seed", type=int, default=None)
+    pln.add_argument("--palette", default=None, help="Palette id to lock (see: list palettes)")
+    pln.add_argument("--max-colors", type=int, default=16)
+    pln.add_argument("--negative", default="", help="Negative prompt")
+    pln.add_argument("--opaque", action="store_true", help="Disable transparent background")
+    pln.add_argument("--planning-backend", default=None, help="Planning backend id (default: mock)")
+
     lst = sub.add_parser("list", help="List available catalog entries as JSON")
-    lst.add_argument("what", choices=["modes", "styles", "palettes", "export-formats", "backends"])
+    lst.add_argument(
+        "what",
+        choices=["modes", "styles", "palettes", "export-formats", "backends", "planning-backends"],
+    )
 
     sub.add_parser("system", help="Show device/backend availability as JSON")
     return parser
@@ -95,14 +116,24 @@ def _cmd_generate(args: argparse.Namespace) -> int:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    modes = ModeRegistry()
+    styles = StyleRegistry(user_dir=settings.user_styles_dir)
+    planner = (
+        PlanningRuntime(
+            backend=get_planning_backend(settings.planning_backend), modes=modes, styles=styles
+        )
+        if settings.planning_enabled
+        else None
+    )
     pipeline = GenerationPipeline(
         backend_name=settings.backend,
         outputs_dir=output_dir,
-        modes=ModeRegistry(),
-        styles=StyleRegistry(user_dir=settings.user_styles_dir),
+        modes=modes,
+        styles=styles,
         palettes=PaletteService(user_dir=settings.user_palettes_dir),
         diffusion_resolution=settings.diffusion_resolution,
         diffusion_steps=settings.diffusion_steps,
+        planner=planner,
     )
     request = GenerationRequest(
         prompt=args.prompt,
@@ -132,6 +163,35 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         ]
     }
     print(json.dumps(output, indent=2))
+    return 0
+
+
+def _cmd_plan(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    width, height = _parse_size(args.size)
+    modes = ModeRegistry()
+    styles = StyleRegistry(user_dir=settings.user_styles_dir)
+    runtime = PlanningRuntime(
+        backend=get_planning_backend(args.planning_backend or settings.planning_backend),
+        modes=modes,
+        styles=styles,
+    )
+    request = GenerationRequest(
+        prompt=args.prompt,
+        negative_prompt=args.negative,
+        mode=args.mode,
+        style=args.style,
+        width=width,
+        height=height,
+        seed=args.seed,
+        palette_id=args.palette,
+        max_colors=args.max_colors,
+        transparent_background=not args.opaque,
+    )
+    style = styles.get(request.style)
+    graph = runtime.plan(request)
+    graph.provenance.expanded_prompt = compile_prompt(graph, style)
+    print(json.dumps(graph.model_dump(mode="json"), indent=2))
     return 0
 
 
@@ -165,6 +225,8 @@ def _cmd_list(args: argparse.Namespace) -> int:
         ]
     elif args.what == "export-formats":
         payload = list_exporters()
+    elif args.what == "planning-backends":
+        payload = list_planning_backends()
     else:
         payload = list_backends()
     print(json.dumps(payload, indent=2))
@@ -190,6 +252,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     handlers = {
         "generate": _cmd_generate,
+        "plan": _cmd_plan,
         "export": _cmd_export,
         "list": _cmd_list,
         "system": _cmd_system,

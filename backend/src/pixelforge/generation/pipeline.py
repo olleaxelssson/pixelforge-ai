@@ -13,6 +13,7 @@ import io
 import random
 from collections.abc import Callable
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from PIL import Image
 
@@ -24,6 +25,7 @@ from pixelforge.core.models import (
 )
 from pixelforge.generation.backends.base import DiffusionSpec
 from pixelforge.generation.backends.registry import get_backend
+from pixelforge.generation.plan_compiler import compile_negative_prompt, compile_prompt
 from pixelforge.generation.prompt_builder import build_negative_prompt, build_prompt
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.model import rgb_to_hex
@@ -31,6 +33,9 @@ from pixelforge.palettes.quantize import apply_palette, extract_palette
 from pixelforge.palettes.service import PaletteService
 from pixelforge.pixelize import binarize_alpha, pixelize, remove_orphan_pixels
 from pixelforge.styles.registry import StyleRegistry
+
+if TYPE_CHECKING:
+    from pixelforge.agents.runtime import PlanningRuntime
 
 ProgressCallback = Callable[[str, float], None]
 
@@ -45,6 +50,7 @@ class GenerationPipeline:
         palettes: PaletteService,
         diffusion_resolution: int = 1024,
         diffusion_steps: int = 4,
+        planner: PlanningRuntime | None = None,
     ) -> None:
         self._backend_name = backend_name
         self._outputs_dir = outputs_dir
@@ -53,6 +59,7 @@ class GenerationPipeline:
         self._palettes = palettes
         self._resolution = diffusion_resolution
         self._steps = diffusion_steps
+        self._planner = planner
 
     def run(
         self, job_id: str, request: GenerationRequest, on_progress: ProgressCallback
@@ -61,9 +68,17 @@ class GenerationPipeline:
         style = self._styles.get(request.style)
         seed = request.seed if request.seed is not None else random.randrange(2**31)
 
+        if self._planner is not None:
+            scene_graph = self._planner.plan(request)
+            prompt = compile_prompt(scene_graph, style)
+            negative_prompt = compile_negative_prompt(scene_graph, style)
+        else:
+            prompt = build_prompt(request, mode, style)
+            negative_prompt = build_negative_prompt(request, style)
+
         spec = DiffusionSpec(
-            prompt=build_prompt(request, mode, style),
-            negative_prompt=build_negative_prompt(request, style),
+            prompt=prompt,
+            negative_prompt=negative_prompt,
             resolution=self._resolution,
             steps=self._steps,
             seed=seed,

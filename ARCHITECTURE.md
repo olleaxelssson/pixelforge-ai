@@ -56,8 +56,9 @@ sequenceDiagram
 |---|---|
 | `config/` | Centralized settings (`Settings`, pydantic-settings): paths, device, model, server. Single source of truth; overridable via env vars (`PIXELFORGE_*`) and `configs/default.toml`. |
 | `api/` | FastAPI routers: `generation`, `jobs`, `palettes`, `styles`, `modes`, `export`, `projects`, `system`. Thin layer — no business logic. |
-| `core/` | Domain models (`GenerationRequest`, `GenerationResult`, `Job`), the async `JobQueue` (asyncio, cancellation, progress callbacks), errors, logging setup. |
-| `generation/` | `GenerationPipeline` orchestrating stages; `backends/` implementing `GenerationBackend` (`flux.py`, `mock.py`); `prompt_builder.py` composing prompts from mode + style + user input. |
+| `core/` | Domain models (`GenerationRequest`, `GenerationResult`, `Job`, `SceneGraph`), the async `JobQueue` (asyncio, cancellation, progress callbacks), errors, logging setup. |
+| `agents/` | Agentic planning layer (D-009/D-010): `SceneGraph`-building agents (`intent`, `art-director`) run by `PlanningRuntime` over a swappable `PlanningBackend` (`planning_backends/`, deterministic `mock`). Off by default; opt-in via `planning_enabled`. |
+| `generation/` | `GenerationPipeline` orchestrating stages; `backends/` implementing `GenerationBackend` (`flux.py`, `mock.py`); `prompt_builder.py` (fast path) and `plan_compiler.py` (compiles a `SceneGraph` into prompts when planning is on). |
 | `pixelize/` | Stage B: content-aware downsampling / grid snapping (`grid_snap.py`), alpha handling. Pure image processing, model-independent. |
 | `palettes/` | `Palette` model, extraction (median-cut/octree), quantization + dithering, swapping, import/export (JASC-PAL, GPL, hex JSON), retro-console-inspired presets. |
 | `styles/` | `StylePreset` registry (NES/SNES/GB/GBA-inspired, modern indie, JRPG, isometric, ...). Data-driven: each preset = prompt fragments + pipeline parameter overrides. Extensible via user TOML files. |

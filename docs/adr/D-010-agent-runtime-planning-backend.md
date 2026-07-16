@@ -1,6 +1,8 @@
 # D-010: Agent runtime & `PlanningBackend` interface
 
-- **Status:** Proposed (Phase 1 design; pending review)
+- **Status:** Accepted — foundation implemented in M7 (`agents/` package: `PlanningBackend` +
+  `MockPlanningBackend`, `Agent` base, `PlanningRuntime`, Intent + Art-Director agents). Cloud/local
+  LLM providers and the full agent set land in later milestones.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** D-009 (Scene Graph — the shared artifact); mirrors D-004 (mock backend) and the

@@ -67,7 +67,7 @@ by `docs/research/agentic-pixel-art-research.md`. All are **Proposed** pending r
 must not regress the current pipeline or CI.
 
 ## D-009: Scene Graph as the central data contract
-**Date:** 2026-07-16 · **Status:** Proposed · **ADR:** [docs/adr/D-009-scene-graph.md](docs/adr/D-009-scene-graph.md)
+**Date:** 2026-07-16 · **Status:** Accepted (M7 foundation) · **ADR:** [docs/adr/D-009-scene-graph.md](docs/adr/D-009-scene-graph.md)
 
 A versioned pydantic `SceneGraph` (`core/scene_graph.py`) is the single source of truth for a
 generation: entity/parts/materials/palette-indexed colors/lighting/pose/camera/animation/provenance.
@@ -76,7 +76,7 @@ regeneration and structurally defeats identity drift. Colors are palette indices
 canonical (hashable for caching/provenance); JSON Schema is exported for the frontend to mirror.
 
 ## D-010: Agent runtime & `PlanningBackend` interface
-**Date:** 2026-07-16 · **Status:** Proposed · **ADR:** [docs/adr/D-010-agent-runtime-planning-backend.md](docs/adr/D-010-agent-runtime-planning-backend.md)
+**Date:** 2026-07-16 · **Status:** Accepted (M7 foundation) · **ADR:** [docs/adr/D-010-agent-runtime-planning-backend.md](docs/adr/D-010-agent-runtime-planning-backend.md)
 
 Single-responsibility agents emit validated JSON (Scene-Graph patches), orchestrated by a
 lightweight in-house DAG — not a heavy framework. A `PlanningBackend` ABC mirrors `GenerationBackend`

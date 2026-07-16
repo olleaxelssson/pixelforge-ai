@@ -7,6 +7,8 @@ from dataclasses import dataclass
 
 from fastapi import Request
 
+from pixelforge.agents.planning_backends.registry import get_planning_backend
+from pixelforge.agents.runtime import PlanningRuntime
 from pixelforge.config import Settings, get_settings
 from pixelforge.core.errors import JobCancelledError
 from pixelforge.core.models import GenerationResult, Job
@@ -27,6 +29,7 @@ class AppState:
     styles: StyleRegistry
     palettes: PaletteService
     projects: ProjectStore
+    planner: PlanningRuntime | None
 
 
 def build_app_state() -> AppState:
@@ -35,6 +38,13 @@ def build_app_state() -> AppState:
     styles = StyleRegistry(user_dir=settings.user_styles_dir)
     palettes = PaletteService(user_dir=settings.user_palettes_dir)
     projects = ProjectStore(projects_dir=settings.projects_dir)
+    planner = (
+        PlanningRuntime(
+            backend=get_planning_backend(settings.planning_backend), modes=modes, styles=styles
+        )
+        if settings.planning_enabled
+        else None
+    )
     pipeline = GenerationPipeline(
         backend_name=settings.backend,
         outputs_dir=settings.outputs_dir,
@@ -43,6 +53,7 @@ def build_app_state() -> AppState:
         palettes=palettes,
         diffusion_resolution=settings.diffusion_resolution,
         diffusion_steps=settings.diffusion_steps,
+        planner=planner,
     )
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:
@@ -65,6 +76,7 @@ def build_app_state() -> AppState:
         styles=styles,
         palettes=palettes,
         projects=projects,
+        planner=planner,
     )
 
 

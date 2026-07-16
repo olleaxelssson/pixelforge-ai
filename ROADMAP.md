@@ -46,11 +46,12 @@ Per-subsystem ADRs: [docs/adr/](docs/adr/) (D-009…D-014). Every milestone belo
 flag-gated, mock-tested, and must not regress the current pipeline or CI**. Sequencing puts the
 cheapest/most-decoupled value first and freezes plugin interfaces last.
 
-### M7 — Scene Graph + agent runtime foundation (D-009, D-010)
-- `core/scene_graph.py` (versioned pydantic) + JSON-Schema export for the frontend
-- `PlanningBackend` interface + `MockPlanningBackend`; agent base, registry, DAG runtime
-- Intent + Art Director agents → `plan_compiler.py` producing today's `DiffusionSpec`
-- "Fast path" toggle; end-to-end on the mock backend, fully tested (first implementation slice)
+### M7 — Scene Graph + agent runtime foundation (D-009, D-010) ✅
+- `core/scene_graph.py` (versioned pydantic, canonical hashing, migration hook, JSON-Schema export)
+- `PlanningBackend` interface + deterministic `MockPlanningBackend`; `Agent` base, registry, DAG runtime
+- Intent + Art Director agents → `generation/plan_compiler.py` compiling the Scene Graph into prompts
+- Opt-in via `planning_enabled` (fast path unchanged by default); `POST /api/plan`, `pixelforge plan`
+- End-to-end on the mock backend, fully tested (ruff/mypy/pytest green); no pipeline regression
 
 ### M8 — Palette Intelligence (D-012)
 - Deterministic color math: ranking, WCAG + CIEDE2000 contrast, CVD simulation, readability, dedup,

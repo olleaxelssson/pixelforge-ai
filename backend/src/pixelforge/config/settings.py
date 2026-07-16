@@ -24,6 +24,12 @@ class Settings(BaseSettings):
     diffusion_resolution: int = 1024
     diffusion_steps: int = 4
 
+    # Agentic planning layer (D-009/D-010). Off by default: the fast path uses prompt_builder and
+    # reproduces existing output exactly. When enabled, agents build a Scene Graph that is compiled
+    # into the diffusion prompt. ``planning_backend`` selects the provider ("mock" ships in M7).
+    planning_enabled: bool = False
+    planning_backend: str = "mock"
+
     max_queue_size: int = 64
     autosave_interval_seconds: int = 60
     undo_history_limit: int = 100
