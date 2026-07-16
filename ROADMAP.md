@@ -37,3 +37,11 @@
 - Packaging: Windows/macOS/Linux installers (electron-builder + bundled Python runtime)
 - Performance profiling, memory budgets, resumable jobs across restarts
 - User guide completion, troubleshooting matrix, v1.0 release
+
+## Proposed direction — Agentic pixel-art layer (M7+, under review)
+A planning-and-critique agent layer over the existing deterministic pipeline: a typed Scene Graph,
+backend-agnostic `PlanningBackend` runtime (with a deterministic mock), character memory, palette
+intelligence, and a Pixel QA engine + AI critic. Phase 0 research and the synthesized architecture
+proposal live in [docs/research/agentic-pixel-art-research.md](docs/research/agentic-pixel-art-research.md);
+Phase 1 (per-subsystem ADRs) begins after review. This layer is additive and must not regress the
+current pipeline or CI.
