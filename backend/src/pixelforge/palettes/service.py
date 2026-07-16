@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from pixelforge.core.errors import UnknownRegistryKeyError
+from pixelforge.palettes.analysis import PaletteAnalysis, analyze_palette
 from pixelforge.palettes.io import load_palette_file, save_palette_file
 from pixelforge.palettes.model import Palette
 from pixelforge.palettes.presets import BUILTIN_PALETTES
@@ -32,6 +33,9 @@ class PaletteService:
         if palette is None:
             raise UnknownRegistryKeyError(f"unknown palette: {palette_id}")
         return palette
+
+    def analyze(self, palette_id: str) -> PaletteAnalysis:
+        return analyze_palette(self.get(palette_id))
 
     def save(self, palette: Palette) -> Palette:
         self._palettes[palette.id] = palette

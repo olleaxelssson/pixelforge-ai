@@ -33,6 +33,7 @@ cd backend
     --palette 8bit-console --dither ordered -o /tmp/sprites
 .venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export
 .venv/bin/pixelforge plan "a knight with a flaming sword" --mode character   # Scene Graph, no image
+.venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
 .venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends
 .venv/bin/pixelforge system              # device / backend availability
 ```

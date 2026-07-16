@@ -53,9 +53,12 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - Opt-in via `planning_enabled` (fast path unchanged by default); `POST /api/plan`, `pixelforge plan`
 - End-to-end on the mock backend, fully tested (ruff/mypy/pytest green); no pipeline regression
 
-### M8 — Palette Intelligence (D-012)
-- Deterministic color math: ranking, WCAG + CIEDE2000 contrast, CVD simulation, readability, dedup,
-  compression, suggestions; API + palette-panel surfacing (high value, low risk, no models)
+### M8 — Palette Intelligence (D-012) ✅
+- Deterministic color math (`palettes/color_math.py`): sRGB↔Lab, WCAG contrast, CIEDE2000, Machado CVD
+- Analysis (`palettes/analysis.py`): ranking, ramps, near-duplicate detection, CVD confusion,
+  perceptual compression (k-means in Lab), readability score, actionable suggestions
+- `PaletteService.analyze`; `/api/palettes/{analyze,compress,simulate-cvd,{id}/analysis}`; `pixelforge palette`
+- Validated against known references (WCAG 21:1, CIEDE2000 Sharma dataset); ruff/mypy/pytest green
 
 ### M9 — Pixel QA engine (D-013)
 - Deterministic defect detectors + safe auto-repair; `MockCritic`; bounded region-repair loop

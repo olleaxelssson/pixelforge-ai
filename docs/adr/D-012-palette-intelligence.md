@@ -1,6 +1,8 @@
 # D-012: Palette Intelligence
 
-- **Status:** Proposed (Phase 1 design; pending review)
+- **Status:** Accepted — implemented in M8 (`palettes/color_math.py`, `palettes/analysis.py`,
+  `PaletteService.analyze`, palette analyze/compress/simulate-cvd API + CLI). Adaptive/ML aesthetic
+  scoring remains deferred as designed.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** extends `palettes/service.py`, `palettes/quantize.py`; feeds the Palette Planner

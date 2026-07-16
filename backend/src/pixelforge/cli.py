@@ -36,6 +36,11 @@ from pixelforge.generation.pipeline import GenerationPipeline
 from pixelforge.generation.plan_compiler import compile_prompt
 from pixelforge.models_manager.device import device_info
 from pixelforge.modes.registry import ModeRegistry
+from pixelforge.palettes.analysis import (
+    analyze_palette,
+    compress_palette,
+    simulate_cvd_palette,
+)
 from pixelforge.palettes.service import PaletteService
 from pixelforge.styles.registry import StyleRegistry
 
@@ -83,6 +88,16 @@ def _build_parser() -> argparse.ArgumentParser:
     pln.add_argument("--negative", default="", help="Negative prompt")
     pln.add_argument("--opaque", action="store_true", help="Disable transparent background")
     pln.add_argument("--planning-backend", default=None, help="Planning backend id (default: mock)")
+
+    pal = sub.add_parser("palette", help="Analyze/transform a palette (contrast, CVD, readability)")
+    pal.add_argument("palette_id", help="Palette id (see: list palettes)")
+    pal.add_argument("--compress", type=int, default=None, metavar="N", help="Compress to N colors")
+    pal.add_argument(
+        "--simulate",
+        default=None,
+        metavar="VISION",
+        help="Simulate a color-vision deficiency: protanopia|deuteranopia|tritanopia",
+    )
 
     lst = sub.add_parser("list", help="List available catalog entries as JSON")
     lst.add_argument(
@@ -195,6 +210,20 @@ def _cmd_plan(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_palette(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    palettes = PaletteService(user_dir=settings.user_palettes_dir)
+    palette = palettes.get(args.palette_id)
+    if args.compress is not None:
+        payload: object = compress_palette(palette, args.compress).model_dump()
+    elif args.simulate is not None:
+        payload = simulate_cvd_palette(palette, args.simulate).model_dump()
+    else:
+        payload = analyze_palette(palette).model_dump()
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
 def _cmd_export(args: argparse.Namespace) -> int:
     exporter = get_exporter(args.format)
     frames = [Image.open(path).convert("RGBA") for path in args.images]
@@ -253,13 +282,14 @@ def main(argv: list[str] | None = None) -> int:
     handlers = {
         "generate": _cmd_generate,
         "plan": _cmd_plan,
+        "palette": _cmd_palette,
         "export": _cmd_export,
         "list": _cmd_list,
         "system": _cmd_system,
     }
     try:
         return handlers[args.command](args)
-    except UnknownRegistryKeyError as error:
+    except (UnknownRegistryKeyError, ValueError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 

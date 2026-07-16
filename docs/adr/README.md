@@ -21,7 +21,7 @@ decisions that need it. Short foundational decisions (D-001…D-008) stay inline
 | [D-009](D-009-scene-graph.md) | Scene Graph — schema & lifecycle (the central data contract) | Accepted (M7 foundation) |
 | [D-010](D-010-agent-runtime-planning-backend.md) | Agent runtime & `PlanningBackend` interface | Accepted (M7 foundation) |
 | [D-011](D-011-character-memory.md) | Character Memory (identity persistence, no drift) | Proposed |
-| [D-012](D-012-palette-intelligence.md) | Palette Intelligence (ranking, contrast, CVD, readability) | Proposed |
+| [D-012](D-012-palette-intelligence.md) | Palette Intelligence (ranking, contrast, CVD, readability) | Accepted (M8) |
 | [D-013](D-013-pixel-qa-and-critic.md) | Pixel QA engine & AI critic | Proposed |
 | [D-014](D-014-agent-tool-plugin-sdk.md) | Agent / Tool Plugin SDK | Proposed |
 

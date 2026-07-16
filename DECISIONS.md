@@ -93,7 +93,7 @@ reuse, no training. Tier 2 (optional): per-character LoRA. A measured drift gate
 threshold) rejects/regenerates on drift. Documented FLUX-IP-Adapter maturity fallback (img2img / SDXL).
 
 ## D-012: Palette Intelligence
-**Date:** 2026-07-16 · **Status:** Proposed · **ADR:** [docs/adr/D-012-palette-intelligence.md](docs/adr/D-012-palette-intelligence.md)
+**Date:** 2026-07-16 · **Status:** Accepted (M8) · **ADR:** [docs/adr/D-012-palette-intelligence.md](docs/adr/D-012-palette-intelligence.md)
 
 Deterministic, model-free color math extending `palettes/`: ranking, WCAG + CIEDE2000 contrast,
 CVD simulation (Machado/Brettel), readability, dedup, perceptual compression in CIELAB, and
