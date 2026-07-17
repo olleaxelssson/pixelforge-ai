@@ -12,11 +12,16 @@ import hashlib
 import json
 from collections import OrderedDict
 
+from pixelforge.agents.animation import AnimationPlanResult
 from pixelforge.agents.art_director import ArtDirectionResult
 from pixelforge.agents.base import Agent, PlanningContext
+from pixelforge.agents.composition import CompositionResult
 from pixelforge.agents.intent import IntentResult
+from pixelforge.agents.lighting import LightingPlanResult
+from pixelforge.agents.material import MaterialPlanResult
 from pixelforge.agents.planning_backends.base import PlanningBackend
 from pixelforge.agents.registry import AgentRegistry
+from pixelforge.agents.silhouette import SilhouetteResult
 from pixelforge.core.models import GenerationRequest
 from pixelforge.core.scene_graph import Provenance, SceneGraph
 from pixelforge.modes.registry import ModeRegistry
@@ -80,9 +85,32 @@ class PlanningRuntime:
                 agent_trace=trace,
             ),
         )
+        self._apply_optional_planners(context, graph)
         # A content-derived id makes planning deterministic: identical requests yield identical ids.
         graph.id = graph.content_hash()
         return graph
+
+    def _apply_optional_planners(self, context: PlanningContext, graph: SceneGraph) -> None:
+        """Fold the M11 planners' outputs into the graph; each is optional so trimmed-down agent
+        registries (tests, plugins) still assemble a valid graph."""
+        composition = context.outputs.get("composition")
+        if isinstance(composition, CompositionResult):
+            graph.composition = composition.composition
+            for part in graph.entity.parts:
+                if part.name in composition.part_z_orders:
+                    part.z_order = composition.part_z_orders[part.name]
+        silhouette = context.outputs.get("silhouette")
+        if isinstance(silhouette, SilhouetteResult):
+            graph.silhouette = silhouette.silhouette
+        lighting = context.outputs.get("lighting")
+        if isinstance(lighting, LightingPlanResult):
+            graph.lighting = lighting.lighting
+        material = context.outputs.get("material")
+        if isinstance(material, MaterialPlanResult):
+            graph.entity.materials = material.materials
+        animation = context.outputs.get("animation")
+        if isinstance(animation, AnimationPlanResult):
+            graph.animation = animation.animation
 
     def _ordered_agents(self) -> list[Agent]:
         agents = {a.name: a for a in self._agents.list()}

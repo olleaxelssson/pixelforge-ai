@@ -114,7 +114,15 @@ def test_art_director_locks_requested_palette() -> None:
 def test_runtime_produces_scene_graph_with_trace() -> None:
     graph = _runtime().plan(GenerationRequest(prompt=_KNIGHT, mode="character", seed=1))
     assert graph.entity.kind is EntityKind.CHARACTER
-    assert graph.provenance.agent_trace == ["intent", "art-director"]
+    assert graph.provenance.agent_trace == [
+        "intent",
+        "art-director",
+        "composition",
+        "silhouette",
+        "lighting",
+        "material",
+        "animation",
+    ]
     assert graph.provenance.planning_backend == "mock"
 
 

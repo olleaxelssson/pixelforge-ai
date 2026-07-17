@@ -8,6 +8,9 @@ parts, the camera/pose, lighting, and constraints — so every phrase traces bac
 
 from __future__ import annotations
 
+from PIL import Image
+
+from pixelforge.animation.actions import get_action
 from pixelforge.core.scene_graph import CameraPerspective, EntityKind, SceneGraph
 from pixelforge.styles.model import StylePreset
 
@@ -64,16 +67,51 @@ def compile_prompt(scene_graph: SceneGraph, style: StylePreset | None = None) ->
     if entity.kind in _CHARACTER_KINDS and scene_graph.pose.description:
         parts.append(scene_graph.pose.description)
 
+    if scene_graph.animation is not None and scene_graph.animation.action != "idle":
+        action = get_action(scene_graph.animation.action)
+        if action is not None:
+            frame = scene_graph.animation.frame
+            if 0 <= frame < len(action.frame_descriptions):
+                parts.append(action.frame_descriptions[frame])
+            else:
+                parts.append(f"{action.name.lower()} pose")
+
     if scene_graph.lighting.direction and scene_graph.lighting.direction != "none":
         parts.append(f"light source from {scene_graph.lighting.direction}")
+    if scene_graph.lighting.rim_light:
+        parts.append("subtle rim light")
+
+    if any(m.specular for m in entity.materials):
+        parts.append("sharp single-pixel specular highlights")
 
     if scene_graph.constraints.transparent_background:
         parts.append("isolated on plain solid background")
+        if scene_graph.composition.margin_fraction >= 0.1:
+            parts.append("clear margin around the subject")
 
     if style is not None and style.prompt_suffix:
         parts.append(style.prompt_suffix)
 
     return ", ".join(part.strip().strip(",") for part in parts if part and part.strip())
+
+
+def compile_silhouette_map(scene_graph: SceneGraph, resolution: int) -> Image.Image | None:
+    """Render the silhouette plan's occupancy grid into a Stage-A control map.
+
+    White = subject, black = empty. Nearest-neighbor upscaling keeps the coarse cells crisp.
+    Returns ``None`` when the plan has no silhouette (trimmed agent registries, static kinds).
+    """
+    plan = scene_graph.silhouette
+    if plan is None or not plan.grid:
+        return None
+    height = len(plan.grid)
+    width = len(plan.grid[0])
+    image = Image.new("L", (width, height), 0)
+    for y, row in enumerate(plan.grid):
+        for x, cell in enumerate(row):
+            if cell == "1":
+                image.putpixel((x, y), 255)
+    return image.resize((resolution, resolution), Image.Resampling.NEAREST)
 
 
 def compile_negative_prompt(scene_graph: SceneGraph, style: StylePreset | None = None) -> str:

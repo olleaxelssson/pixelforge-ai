@@ -76,9 +76,16 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - Later: IP-Adapter conditioning at Stage A (today: img2img reference fallback), Tier-2 LoRA,
   CLIP/SigLIP embedding backend
 
-### M11 — Full planning agent set + provenance
-- Composition / Silhouette / Lighting / Material / Animation planners; provenance sidecar per asset
-- Silhouette/pose → ControlNet conditioning; cross-frame consistency for animation
+### M11 — Full planning agent set + provenance (D-009 v2, D-010) ✅
+- Composition / Silhouette / Lighting / Material / Animation planners (7-agent pipeline total),
+  folded into the Scene Graph by the runtime; trimmed registries still assemble
+- Scene Graph v2: composition, silhouette occupancy grid, material finish hints, rim light —
+  with a real v1→v2 migration exercising the versioning machinery
+- Silhouette plan → Stage-A control map (`compile_silhouette_map` → `DiffusionSpec.extra`),
+  ready for ControlNet conditioning when a real backend consumes it
+- Provenance sidecar per asset (`*.provenance.json`: scene graph + prompts + seed + versions)
+  whenever planning is active
+- Later: cross-frame animation consistency (M3 reference-frame work)
 
 ### M12 — Plugin SDK & marketplace architecture (D-014)
 - Entry-point plugin loader + manifest; stabilized, versioned extension interfaces; sample plugins

@@ -6,14 +6,24 @@ register here; the runtime orders them by their declared dependencies.
 
 from __future__ import annotations
 
+from pixelforge.agents.animation import AnimationAgent
 from pixelforge.agents.art_director import ArtDirectorAgent
 from pixelforge.agents.base import Agent
+from pixelforge.agents.composition import CompositionAgent
 from pixelforge.agents.intent import IntentAgent
+from pixelforge.agents.lighting import LightingAgent
+from pixelforge.agents.material import MaterialAgent
+from pixelforge.agents.silhouette import SilhouetteAgent
 from pixelforge.core.errors import UnknownRegistryKeyError
 
 BUILTIN_AGENTS: list[Agent] = [
     IntentAgent(),
     ArtDirectorAgent(),
+    CompositionAgent(),
+    SilhouetteAgent(),
+    LightingAgent(),
+    MaterialAgent(),
+    AnimationAgent(),
 ]
 
 

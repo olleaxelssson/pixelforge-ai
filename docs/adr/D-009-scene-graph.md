@@ -1,8 +1,9 @@
 # D-009: Scene Graph — schema & lifecycle
 
 - **Status:** Accepted — foundation implemented in M7 (`core/scene_graph.py`,
-  `generation/plan_compiler.py`); parts/QA/animation slots and editor lifecycle land in later
-  milestones.
+  `generation/plan_compiler.py`); **schema v2 in M11** (composition, silhouette occupancy grid,
+  material finish hints, rim light; first real v1→v2 migration) plus the provenance sidecar.
+  Editor lifecycle lands with the editor-depth milestone.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** `docs/research/agentic-pixel-art-research.md`; builds on D-002 (hybrid pipeline),

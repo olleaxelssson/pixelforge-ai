@@ -22,7 +22,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-SCENE_GRAPH_SCHEMA_VERSION = 1
+SCENE_GRAPH_SCHEMA_VERSION = 2
 
 
 class EntityKind(str, Enum):
@@ -62,11 +62,18 @@ class MaterialKind(str, Enum):
 
 
 class Material(BaseModel):
-    """A surface with a characteristic shading behavior (metal reflects, cloth is matte, ...)."""
+    """A surface with a characteristic shading behavior (metal reflects, cloth is matte, ...).
+
+    The finish hints (v2) are filled by the Material planner: whether the surface gets specular
+    pixels, whether dithering is acceptable on it, and how long its shading ramp should be.
+    """
 
     name: str
     kind: MaterialKind = MaterialKind.GENERIC
     description: str = ""
+    specular: bool = False
+    dither_ok: bool = True
+    ramp_size: int = Field(default=3, ge=1, le=8)
 
 
 class Part(BaseModel):
@@ -97,6 +104,7 @@ class Lighting(BaseModel):
     direction: str = "top-left"
     intensity: float = Field(default=0.6, ge=0.0, le=1.0)
     single_source: bool = True
+    rim_light: bool = False  # v2: set by the Lighting planner (e.g. for glowing/energy materials)
 
 
 class Pose(BaseModel):
@@ -113,6 +121,26 @@ class AnimationState(BaseModel):
     action: str = "idle"
     frame: int = 0
     direction: str = "south"
+
+
+class Composition(BaseModel):
+    """How the subject sits in the frame (v2) — decided by the Composition planner."""
+
+    framing: str = "centered"  # "centered" | "edge-to-edge" | "diagonal"
+    margin_fraction: float = Field(default=0.1, ge=0.0, le=0.4)
+    focal_point: str = "center"
+    balance: str = "symmetric"
+
+
+class SilhouettePlan(BaseModel):
+    """Coarse occupancy grid (v2) — the Silhouette planner's shape intent.
+
+    ``grid`` is row-major; each row is a string of '0'/'1' cells. The plan compiler renders it into
+    a Stage-A control map (silhouette conditioning), and QA can compare the result against it.
+    """
+
+    grid: list[str] = Field(default_factory=list)
+    notes: str = ""
 
 
 class Constraints(BaseModel):
@@ -171,6 +199,8 @@ class SceneGraph(BaseModel):
     pose: Pose = Field(default_factory=Pose)
     camera: Camera = Field(default_factory=Camera)
     animation: AnimationState | None = None
+    composition: Composition = Field(default_factory=Composition)
+    silhouette: SilhouettePlan | None = None
     constraints: Constraints = Field(default_factory=Constraints)
     qa: list[Finding] = Field(default_factory=list)
     provenance: Provenance = Field(default_factory=Provenance)
@@ -194,11 +224,30 @@ class SceneGraph(BaseModel):
         return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
+def _migrate_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
+    """v2 added composition, silhouette, material finish hints, and lighting.rim_light.
+
+    All new fields have defaults, so the migration only has to stamp them in explicitly; existing
+    v1 content is untouched.
+    """
+    data.setdefault("composition", Composition().model_dump(mode="json"))
+    data.setdefault("silhouette", None)
+    for material in data.get("entity", {}).get("materials", []):
+        material.setdefault("specular", False)
+        material.setdefault("dither_ok", True)
+        material.setdefault("ramp_size", 3)
+    if "lighting" in data:
+        data["lighting"].setdefault("rim_light", False)
+    return data
+
+
+_MIGRATIONS: dict[int, Any] = {1: _migrate_v1_to_v2}
+
+
 def migrate_scene_graph(data: dict[str, Any]) -> dict[str, Any]:
     """Upgrade a serialized Scene Graph to the current schema version.
 
-    v1 is the initial schema, so there is nothing to migrate yet; the loop is the extension point
-    for future versions. A newer-than-supported version is a hard error rather than a silent guess.
+    A newer-than-supported version is a hard error rather than a silent guess.
     """
     version = int(data.get("schema_version", SCENE_GRAPH_SCHEMA_VERSION))
     if version > SCENE_GRAPH_SCHEMA_VERSION:
@@ -206,7 +255,10 @@ def migrate_scene_graph(data: dict[str, Any]) -> dict[str, Any]:
             f"scene graph schema_version {version} is newer than supported "
             f"{SCENE_GRAPH_SCHEMA_VERSION}; upgrade PixelForge to load this project"
         )
-    # while version < SCENE_GRAPH_SCHEMA_VERSION: data = _migrate_v{version}(data); version += 1
+    while version < SCENE_GRAPH_SCHEMA_VERSION:
+        data = _MIGRATIONS[version](data)
+        version += 1
+    data["schema_version"] = SCENE_GRAPH_SCHEMA_VERSION
     return data
 
 

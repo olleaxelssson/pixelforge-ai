@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import io
+import json
 import random
 from collections.abc import Callable
 from pathlib import Path
@@ -23,9 +24,14 @@ from pixelforge.core.models import (
     GenerationRequest,
     GenerationResult,
 )
+from pixelforge.core.scene_graph import SceneGraph
 from pixelforge.generation.backends.base import DiffusionSpec
 from pixelforge.generation.backends.registry import get_backend
-from pixelforge.generation.plan_compiler import compile_negative_prompt, compile_prompt
+from pixelforge.generation.plan_compiler import (
+    compile_negative_prompt,
+    compile_prompt,
+    compile_silhouette_map,
+)
 from pixelforge.generation.prompt_builder import build_negative_prompt, build_prompt
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.model import rgb_to_hex
@@ -72,6 +78,7 @@ class GenerationPipeline:
         style = self._styles.get(request.style)
         seed = request.seed if request.seed is not None else random.randrange(2**31)
 
+        scene_graph: SceneGraph | None = None
         if self._planner is not None:
             scene_graph = self._planner.plan(request)
             prompt = compile_prompt(scene_graph, style)
@@ -90,6 +97,10 @@ class GenerationPipeline:
             reference_image=_decode_reference(request.reference_image_base64),
             reference_strength=request.reference_strength,
         )
+        if scene_graph is not None:
+            control_map = compile_silhouette_map(scene_graph, self._resolution)
+            if control_map is not None:
+                spec.extra["silhouette_map"] = control_map
 
         on_progress("diffusion", 0.0)
         backend = get_backend(self._backend_name)
@@ -131,18 +142,51 @@ class GenerationPipeline:
 
             filename = f"{job_id}_{index}.png"
             sprite.save(self._outputs_dir / filename)
+            palette_hex = [rgb_to_hex((int(c[0]), int(c[1]), int(c[2]))) for c in colors]
+            if scene_graph is not None:
+                self._write_provenance(
+                    scene_graph, prompt, negative_prompt, filename, seed + index, palette_hex
+                )
             results.append(
                 GeneratedImage(
                     filename=filename,
                     width=request.width,
                     height=request.height,
                     seed=seed + index,
-                    palette_hex=[rgb_to_hex((int(c[0]), int(c[1]), int(c[2]))) for c in colors],
+                    palette_hex=palette_hex,
                 )
             )
 
         on_progress("finalize", 100.0)
         return GenerationResult(images=results)
+
+    def _write_provenance(
+        self,
+        scene_graph: SceneGraph,
+        prompt: str,
+        negative_prompt: str,
+        filename: str,
+        seed: int,
+        palette_hex: list[str],
+    ) -> None:
+        """Provenance sidecar (D-009): everything needed to re-derive or audit this asset."""
+        graph = scene_graph.model_copy(deep=True)
+        graph.provenance.expanded_prompt = prompt
+        graph.provenance.negative_prompt = negative_prompt
+        graph.provenance.seed = seed
+        graph.provenance.model_versions["diffusion_backend"] = self._backend_name
+        sidecar = {
+            "scene_graph": graph.canonical_dict(),
+            "generation": {
+                "filename": filename,
+                "seed": seed,
+                "palette_hex": palette_hex,
+                "diffusion_resolution": self._resolution,
+                "diffusion_steps": self._steps,
+            },
+        }
+        path = self._outputs_dir / f"{Path(filename).stem}.provenance.json"
+        path.write_text(json.dumps(sidecar, indent=2, sort_keys=True))
 
 
 def _decode_reference(data: str | None) -> Image.Image | None:

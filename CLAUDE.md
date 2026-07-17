@@ -70,7 +70,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/generation/pipeline.py` — 4-stage pipeline (diffusion → pixelize → palette → cleanup)
 - `backend/src/pixelforge/generation/backends/` — `mock.py`, `flux.py`; register new models in `registry.py`
 - `backend/src/pixelforge/core/scene_graph.py` — the `SceneGraph` (D-009): structured, typed plan for one generation
-- `backend/src/pixelforge/agents/` — agentic planning layer (D-010): `intent`/`art-director` agents, `PlanningRuntime`, swappable `planning_backends/` (deterministic `mock`); off by default (`planning_enabled`), compiled by `generation/plan_compiler.py`
+- `backend/src/pixelforge/agents/` — agentic planning layer (D-010): seven agents (`intent`, `art-director`, `composition`, `silhouette`, `lighting`, `material`, `animation`), `PlanningRuntime`, swappable `planning_backends/` (deterministic `mock`); off by default (`planning_enabled`), compiled by `generation/plan_compiler.py` (incl. silhouette control map + provenance sidecar)
 - `backend/src/pixelforge/qa/` — Pixel QA engine (D-013): deterministic `detectors/` + safe repairs, `HeuristicCritic`, `QAEngine`; off by default (`qa_enabled`), exposed via `POST /api/qa` and `pixelforge qa`
 - `backend/src/pixelforge/memory/` — character memory (D-011): `Character` store + reference frames + identity embeddings (mock backend), drift gate; opt-in per request via `character_id`, exposed via `/api/characters` and `pixelforge character`
 - `backend/src/pixelforge/palettes/`, `styles/`, `modes/`, `exporters/`, `animation/` — data-driven registries; extend by adding entries, not by editing consumers
