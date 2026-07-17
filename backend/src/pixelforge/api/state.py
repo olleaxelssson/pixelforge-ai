@@ -17,6 +17,7 @@ from pixelforge.generation.pipeline import GenerationPipeline
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.service import PaletteService
 from pixelforge.projects.store import ProjectStore
+from pixelforge.qa.engine import QAEngine
 from pixelforge.styles.registry import StyleRegistry
 
 
@@ -30,6 +31,7 @@ class AppState:
     palettes: PaletteService
     projects: ProjectStore
     planner: PlanningRuntime | None
+    qa: QAEngine
 
 
 def build_app_state() -> AppState:
@@ -45,6 +47,7 @@ def build_app_state() -> AppState:
         if settings.planning_enabled
         else None
     )
+    qa = QAEngine(pass_threshold=settings.qa_pass_threshold)
     pipeline = GenerationPipeline(
         backend_name=settings.backend,
         outputs_dir=settings.outputs_dir,
@@ -54,6 +57,7 @@ def build_app_state() -> AppState:
         diffusion_resolution=settings.diffusion_resolution,
         diffusion_steps=settings.diffusion_steps,
         planner=planner,
+        qa_engine=qa if (settings.qa_enabled and settings.qa_autorepair) else None,
     )
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:
@@ -77,6 +81,7 @@ def build_app_state() -> AppState:
         palettes=palettes,
         projects=projects,
         planner=planner,
+        qa=qa,
     )
 
 

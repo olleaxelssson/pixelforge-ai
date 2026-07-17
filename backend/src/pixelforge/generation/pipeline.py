@@ -32,10 +32,12 @@ from pixelforge.palettes.model import rgb_to_hex
 from pixelforge.palettes.quantize import apply_palette, extract_palette
 from pixelforge.palettes.service import PaletteService
 from pixelforge.pixelize import binarize_alpha, pixelize, remove_orphan_pixels
+from pixelforge.qa.models import DetectorContext
 from pixelforge.styles.registry import StyleRegistry
 
 if TYPE_CHECKING:
     from pixelforge.agents.runtime import PlanningRuntime
+    from pixelforge.qa.engine import QAEngine
 
 ProgressCallback = Callable[[str, float], None]
 
@@ -51,6 +53,7 @@ class GenerationPipeline:
         diffusion_resolution: int = 1024,
         diffusion_steps: int = 4,
         planner: PlanningRuntime | None = None,
+        qa_engine: QAEngine | None = None,
     ) -> None:
         self._backend_name = backend_name
         self._outputs_dir = outputs_dir
@@ -60,6 +63,7 @@ class GenerationPipeline:
         self._resolution = diffusion_resolution
         self._steps = diffusion_steps
         self._planner = planner
+        self._qa = qa_engine
 
     def run(
         self, job_id: str, request: GenerationRequest, on_progress: ProgressCallback
@@ -115,6 +119,15 @@ class GenerationPipeline:
                 sprite = remove_orphan_pixels(sprite)
             else:
                 sprite = sprite.convert("RGB").convert("RGBA")
+
+            if self._qa is not None:
+                context = DetectorContext(
+                    max_colors=request.max_colors,
+                    transparent_background=request.transparent_background,
+                    palette=colors if request.palette_id else None,
+                    lighting_direction=request.lighting_direction,
+                )
+                sprite, _ = self._qa.repair(sprite, context)
 
             filename = f"{job_id}_{index}.png"
             sprite.save(self._outputs_dir / filename)

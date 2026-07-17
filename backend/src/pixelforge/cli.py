@@ -42,6 +42,8 @@ from pixelforge.palettes.analysis import (
     simulate_cvd_palette,
 )
 from pixelforge.palettes.service import PaletteService
+from pixelforge.qa.engine import QAEngine
+from pixelforge.qa.models import DetectorContext
 from pixelforge.styles.registry import StyleRegistry
 
 
@@ -98,6 +100,19 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="VISION",
         help="Simulate a color-vision deficiency: protanopia|deuteranopia|tritanopia",
     )
+
+    qac = sub.add_parser("qa", help="Run the pixel QA engine on an image (report as JSON)")
+    qac.add_argument("image", help="Path to a PNG sprite")
+    qac.add_argument("--max-colors", type=int, default=16, help="Color budget for overflow checks")
+    qac.add_argument("--palette", default=None, help="Locked palette id (see: list palettes)")
+    qac.add_argument("--lighting", default=None, help="Intended light direction, e.g. top-left")
+    qac.add_argument(
+        "--opaque", action="store_true", help="Sprite is not on a transparent background"
+    )
+    qac.add_argument(
+        "--repair", action="store_true", help="Apply safe repairs and write the result"
+    )
+    qac.add_argument("-o", "--output", default=None, help="Output path for the repaired PNG")
 
     lst = sub.add_parser("list", help="List available catalog entries as JSON")
     lst.add_argument(
@@ -224,6 +239,31 @@ def _cmd_palette(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_qa(args: argparse.Namespace) -> int:
+    settings = get_settings()
+    image = Image.open(args.image).convert("RGBA")
+    palette = None
+    if args.palette:
+        palette = PaletteService(user_dir=settings.user_palettes_dir).get(args.palette).as_rgb()
+    context = DetectorContext(
+        max_colors=args.max_colors,
+        transparent_background=not args.opaque,
+        palette=palette,
+        lighting_direction=args.lighting,
+    )
+    engine = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    if args.repair:
+        repaired, report = engine.repair(image, context)
+        if args.output:
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+            repaired.save(args.output)
+        payload: object = {"report": report.model_dump(), "output": args.output}
+    else:
+        payload = engine.run(image, context).model_dump()
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
 def _cmd_export(args: argparse.Namespace) -> int:
     exporter = get_exporter(args.format)
     frames = [Image.open(path).convert("RGBA") for path in args.images]
@@ -283,6 +323,7 @@ def main(argv: list[str] | None = None) -> int:
         "generate": _cmd_generate,
         "plan": _cmd_plan,
         "palette": _cmd_palette,
+        "qa": _cmd_qa,
         "export": _cmd_export,
         "list": _cmd_list,
         "system": _cmd_system,

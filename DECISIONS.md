@@ -100,7 +100,7 @@ CVD simulation (Machado/Brettel), readability, dedup, perceptual compression in 
 actionable suggestions. Fully unit-testable, instant, high-value early milestone.
 
 ## D-013: Pixel QA engine & AI critic
-**Date:** 2026-07-16 · **Status:** Proposed · **ADR:** [docs/adr/D-013-pixel-qa-and-critic.md](docs/adr/D-013-pixel-qa-and-critic.md)
+**Date:** 2026-07-16 · **Status:** Accepted (M9: Layer 1) · **ADR:** [docs/adr/D-013-pixel-qa-and-critic.md](docs/adr/D-013-pixel-qa-and-critic.md)
 
 Layer 1: deterministic defect detectors (orphans, clusters, jaggies, banding, pillow shading,
 palette overflow, silhouette, dither, light direction) with typed findings + safe auto-repair.

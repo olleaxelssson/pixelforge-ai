@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     planning_enabled: bool = False
     planning_backend: str = "mock"
 
+    # Pixel QA engine (D-013). Off by default. When enabled, generated sprites pass through the QA
+    # engine and (if ``qa_autorepair``) its safe deterministic repairs before being saved.
+    qa_enabled: bool = False
+    qa_autorepair: bool = True
+    qa_pass_threshold: float = 0.6
+
     max_queue_size: int = 64
     autosave_interval_seconds: int = 60
     undo_history_limit: int = 100

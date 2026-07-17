@@ -34,6 +34,7 @@ cd backend
 .venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export
 .venv/bin/pixelforge plan "a knight with a flaming sword" --mode character   # Scene Graph, no image
 .venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
+.venv/bin/pixelforge qa sprite.png --repair -o fixed.png  # detect defects; --repair applies safe fixes
 .venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends
 .venv/bin/pixelforge system              # device / backend availability
 ```
@@ -68,6 +69,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/generation/backends/` — `mock.py`, `flux.py`; register new models in `registry.py`
 - `backend/src/pixelforge/core/scene_graph.py` — the `SceneGraph` (D-009): structured, typed plan for one generation
 - `backend/src/pixelforge/agents/` — agentic planning layer (D-010): `intent`/`art-director` agents, `PlanningRuntime`, swappable `planning_backends/` (deterministic `mock`); off by default (`planning_enabled`), compiled by `generation/plan_compiler.py`
+- `backend/src/pixelforge/qa/` — Pixel QA engine (D-013): deterministic `detectors/` + safe repairs, `HeuristicCritic`, `QAEngine`; off by default (`qa_enabled`), exposed via `POST /api/qa` and `pixelforge qa`
 - `backend/src/pixelforge/palettes/`, `styles/`, `modes/`, `exporters/`, `animation/` — data-driven registries; extend by adding entries, not by editing consumers
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)

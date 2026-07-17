@@ -1,6 +1,8 @@
 # D-013: Pixel QA engine & AI critic
 
-- **Status:** Proposed (Phase 1 design; pending review)
+- **Status:** Accepted — Layer 1 implemented in M9 (`qa/` package: deterministic detectors +
+  safe repairs, deterministic `HeuristicCritic`, `QAEngine`, opt-in pipeline hook, API + CLI).
+  The Layer-2 VLM critic and the diffusion region-repair loop remain later milestones.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** extends `pixelize/cleanup.py`; consumes D-009 (writes findings into the Scene Graph),

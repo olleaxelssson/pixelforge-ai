@@ -60,9 +60,12 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - `PaletteService.analyze`; `/api/palettes/{analyze,compress,simulate-cvd,{id}/analysis}`; `pixelforge palette`
 - Validated against known references (WCAG 21:1, CIEDE2000 Sharma dataset); ruff/mypy/pytest green
 
-### M9 — Pixel QA engine (D-013)
-- Deterministic defect detectors + safe auto-repair; `MockCritic`; bounded region-repair loop
-- Golden-set threshold calibration; QA findings stored on the Scene Graph
+### M9 — Pixel QA engine (D-013) ✅ (Layer 1)
+- Deterministic detectors (`qa/detectors/`): floating pixels, broken clusters, palette overflow,
+  silhouette, pillow shading, light-direction — with safe auto-repair for the first three
+- Deterministic `HeuristicCritic` (reuses D-012) + `QAEngine` (run/repair); findings on the Scene Graph
+- Opt-in pipeline hook (`qa_enabled`); `POST /api/qa`; `pixelforge qa` (`--repair`); all detectors tested
+- Later: Layer-2 VLM critic and the diffusion region-repair loop (regenerate only failing regions)
 
 ### M10 — Character Memory (D-011)
 - Character store + reference frames + identity embeddings; IP-Adapter Tier-1 path + palette lock
