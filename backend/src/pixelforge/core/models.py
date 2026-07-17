@@ -39,6 +39,9 @@ class GenerationRequest(BaseModel):
     shading_style: str = "standard"
     reference_image_base64: str | None = None
     reference_strength: float = Field(default=0.6, ge=0.0, le=1.0)
+    # Character memory (D-011): generate as this stored character; the API/CLI applies the
+    # character's identity (prompt, palette lock, reference frame) before the pipeline runs.
+    character_id: str | None = None
 
 
 class GeneratedImage(BaseModel):

@@ -14,6 +14,9 @@ from pixelforge.core.errors import JobCancelledError
 from pixelforge.core.models import GenerationResult, Job
 from pixelforge.core.queue import JobQueue
 from pixelforge.generation.pipeline import GenerationPipeline
+from pixelforge.memory.embeddings import get_embedding_backend
+from pixelforge.memory.service import CharacterMemory
+from pixelforge.memory.store import CharacterStore
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.service import PaletteService
 from pixelforge.projects.store import ProjectStore
@@ -32,6 +35,7 @@ class AppState:
     projects: ProjectStore
     planner: PlanningRuntime | None
     qa: QAEngine
+    characters: CharacterMemory
 
 
 def build_app_state() -> AppState:
@@ -48,6 +52,11 @@ def build_app_state() -> AppState:
         else None
     )
     qa = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    characters = CharacterMemory(
+        store=CharacterStore(characters_dir=settings.characters_dir),
+        embeddings=get_embedding_backend(settings.memory_embedding_backend),
+        drift_threshold=settings.memory_drift_threshold,
+    )
     pipeline = GenerationPipeline(
         backend_name=settings.backend,
         outputs_dir=settings.outputs_dir,
@@ -82,6 +91,7 @@ def build_app_state() -> AppState:
         projects=projects,
         planner=planner,
         qa=qa,
+        characters=characters,
     )
 
 

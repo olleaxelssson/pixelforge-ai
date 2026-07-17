@@ -34,6 +34,10 @@ from pixelforge.exporters.registry import get_exporter, list_exporters
 from pixelforge.generation.backends.registry import list_backends
 from pixelforge.generation.pipeline import GenerationPipeline
 from pixelforge.generation.plan_compiler import compile_prompt
+from pixelforge.memory.embeddings import get_embedding_backend
+from pixelforge.memory.models import CharacterIdentity
+from pixelforge.memory.service import CharacterMemory
+from pixelforge.memory.store import CharacterStore
 from pixelforge.models_manager.device import device_info
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.analysis import (
@@ -66,6 +70,7 @@ def _build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--negative", default="", help="Negative prompt")
     gen.add_argument("--opaque", action="store_true", help="Disable transparent background")
     gen.add_argument("--reference", default=None, help="Path to a reference image")
+    gen.add_argument("--character", default=None, help="Stored character id (identity memory)")
     gen.add_argument("-o", "--output-dir", default=".", help="Directory for output PNGs")
     gen.add_argument("--quiet", action="store_true", help="Suppress progress on stderr")
 
@@ -114,6 +119,25 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     qac.add_argument("-o", "--output", default=None, help="Output path for the repaired PNG")
 
+    chr_parser = sub.add_parser("character", help="Manage stored characters (identity memory)")
+    chr_sub = chr_parser.add_subparsers(dest="character_command", required=True)
+    chr_create = chr_sub.add_parser("create", help="Create a character")
+    chr_create.add_argument("name")
+    chr_create.add_argument("--subject", required=True, help='e.g. "Captain Elias, veteran knight"')
+    chr_create.add_argument("--proportions", default="", help='e.g. "tall, broad-shouldered"')
+    chr_create.add_argument("--silhouette", default="", help='e.g. "horned helm, long cape"')
+    chr_create.add_argument("--palette", default=None, help="Palette id to lock for this character")
+    chr_sub.add_parser("list", help="List stored characters")
+    chr_frame = chr_sub.add_parser("add-frame", help="Attach a reference frame image")
+    chr_frame.add_argument("character_id")
+    chr_frame.add_argument("image", help="Path to a PNG reference frame")
+    chr_frame.add_argument(
+        "--label", default="passport", help='"passport" anchors the identity embedding'
+    )
+    chr_drift = chr_sub.add_parser("drift", help="Check a sprite against the stored identity")
+    chr_drift.add_argument("character_id")
+    chr_drift.add_argument("image", help="Path to the candidate sprite PNG")
+
     lst = sub.add_parser("list", help="List available catalog entries as JSON")
     lst.add_argument(
         "what",
@@ -138,6 +162,14 @@ def _encode_reference(path: str | None) -> str | None:
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
     return base64.b64encode(buffer.getvalue()).decode()
+
+
+def _character_memory(settings) -> CharacterMemory:
+    return CharacterMemory(
+        store=CharacterStore(characters_dir=settings.characters_dir),
+        embeddings=get_embedding_backend(settings.memory_embedding_backend),
+        drift_threshold=settings.memory_drift_threshold,
+    )
 
 
 def _cmd_generate(args: argparse.Namespace) -> int:
@@ -180,6 +212,8 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         transparent_background=not args.opaque,
         reference_image_base64=_encode_reference(args.reference),
     )
+    if args.character:
+        request = _character_memory(settings).apply_to_request(args.character, request)
 
     def on_progress(stage: str, percent: float) -> None:
         if not args.quiet:
@@ -264,6 +298,31 @@ def _cmd_qa(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_character(args: argparse.Namespace) -> int:
+    memory = _character_memory(get_settings())
+    if args.character_command == "create":
+        character = memory.create(
+            args.name,
+            CharacterIdentity(
+                subject=args.subject,
+                proportions=args.proportions,
+                silhouette=args.silhouette,
+            ),
+            palette_id=args.palette,
+        )
+        payload: object = character.model_dump()
+    elif args.character_command == "list":
+        payload = [c.model_dump() for c in memory.list()]
+    elif args.character_command == "add-frame":
+        image = Image.open(args.image).convert("RGBA")
+        payload = memory.add_reference_frame(args.character_id, image, args.label).model_dump()
+    else:  # drift
+        image = Image.open(args.image).convert("RGBA")
+        payload = memory.check_drift(args.character_id, image).model_dump()
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
 def _cmd_export(args: argparse.Namespace) -> int:
     exporter = get_exporter(args.format)
     frames = [Image.open(path).convert("RGBA") for path in args.images]
@@ -324,6 +383,7 @@ def main(argv: list[str] | None = None) -> int:
         "plan": _cmd_plan,
         "palette": _cmd_palette,
         "qa": _cmd_qa,
+        "character": _cmd_character,
         "export": _cmd_export,
         "list": _cmd_list,
         "system": _cmd_system,

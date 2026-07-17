@@ -36,6 +36,12 @@ class Settings(BaseSettings):
     qa_autorepair: bool = True
     qa_pass_threshold: float = 0.6
 
+    # Character memory (D-011). Always available (opt-in per request via ``character_id``).
+    # ``memory_embedding_backend`` selects the identity-embedding provider ("mock" ships in M10);
+    # ``memory_drift_threshold`` is the cosine-similarity gate below which a sprite counts as drift.
+    memory_embedding_backend: str = "mock"
+    memory_drift_threshold: float = 0.85
+
     max_queue_size: int = 64
     autosave_interval_seconds: int = 60
     undo_history_limit: int = 100
@@ -57,6 +63,10 @@ class Settings(BaseSettings):
         return self.data_dir / "palettes"
 
     @property
+    def characters_dir(self) -> Path:
+        return self.data_dir / "characters"
+
+    @property
     def user_styles_dir(self) -> Path:
         return self.data_dir / "styles"
 
@@ -67,6 +77,7 @@ class Settings(BaseSettings):
             self.models_dir,
             self.user_palettes_dir,
             self.user_styles_dir,
+            self.characters_dir,
         ):
             path.mkdir(parents=True, exist_ok=True)
 

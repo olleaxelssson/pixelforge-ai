@@ -1,6 +1,10 @@
 # D-011: Character Memory — identity persistence without drift
 
-- **Status:** Proposed (Phase 1 design; pending review)
+- **Status:** Accepted — Tier-1 foundation implemented in M10 (`memory/` package: `Character` +
+  identity model, `CharacterStore`, swappable `EmbeddingBackend` with deterministic mock,
+  `CharacterMemory` with identity application + measured drift gate; API/CLI wired). IP-Adapter
+  conditioning at Stage A and the Tier-2 per-character LoRA remain later milestones (today the
+  canonical frame rides as the img2img reference — the documented fallback).
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** D-009 (Scene Graph), D-010 (agent runtime), D-013 (QA loop enforces the drift gate);

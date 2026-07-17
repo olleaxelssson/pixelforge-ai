@@ -85,7 +85,7 @@ deterministic code executes — avoiding Texel Studio's per-pixel-LLM scalabilit
 toggle skips planning and reproduces today's behavior.
 
 ## D-011: Character Memory (IP-Adapter-first, no drift)
-**Date:** 2026-07-16 · **Status:** Proposed · **ADR:** [docs/adr/D-011-character-memory.md](docs/adr/D-011-character-memory.md)
+**Date:** 2026-07-16 · **Status:** Accepted (M10: Tier 1) · **ADR:** [docs/adr/D-011-character-memory.md](docs/adr/D-011-character-memory.md)
 
 Persisted `Character` = canonical Scene-Graph fragment + locked palette + reference frames + CLIP/
 SigLIP identity embeddings. Tier 1 (default): IP-Adapter reference conditioning + palette lock + slot

@@ -67,9 +67,14 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - Opt-in pipeline hook (`qa_enabled`); `POST /api/qa`; `pixelforge qa` (`--repair`); all detectors tested
 - Later: Layer-2 VLM critic and the diffusion region-repair loop (regenerate only failing regions)
 
-### M10 — Character Memory (D-011)
-- Character store + reference frames + identity embeddings; IP-Adapter Tier-1 path + palette lock
-- Measured drift gate feeding the QA loop; "Elias winter armor / without helmet" scenario tests
+### M10 — Character Memory (D-011) ✅ (Tier 1)
+- `memory/`: `Character` (identity fragment + locked palette + reference frames + embedding),
+  `CharacterStore` (JSON + frame PNGs), swappable `EmbeddingBackend` (deterministic mock)
+- `CharacterMemory`: identity application (stable prompt prefix, palette lock, canonical frame as
+  reference image) + measured cosine-similarity drift gate; "Elias winter armor" scenario tested
+- `character_id` on `GenerationRequest`; `/api/characters` (CRUD/frames/drift); `pixelforge character`
+- Later: IP-Adapter conditioning at Stage A (today: img2img reference fallback), Tier-2 LoRA,
+  CLIP/SigLIP embedding backend
 
 ### M11 — Full planning agent set + provenance
 - Composition / Silhouette / Lighting / Material / Animation planners; provenance sidecar per asset

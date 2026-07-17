@@ -11,7 +11,16 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from pixelforge import __version__
-from pixelforge.api.routers import catalog, export, generation, palettes, plan, projects, qa
+from pixelforge.api.routers import (
+    catalog,
+    characters,
+    export,
+    generation,
+    palettes,
+    plan,
+    projects,
+    qa,
+)
 from pixelforge.api.state import build_app_state
 from pixelforge.core.logging_setup import configure_logging
 
@@ -42,6 +51,7 @@ app.include_router(export.router)
 app.include_router(projects.router)
 app.include_router(plan.router)
 app.include_router(qa.router)
+app.include_router(characters.router)
 
 
 @app.get("/api/health")

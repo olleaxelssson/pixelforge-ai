@@ -20,6 +20,9 @@ async def submit_generation(
     request: GenerationRequest, state: AppState = Depends(get_state)
 ) -> Job:
     try:
+        if request.character_id:
+            # Apply the stored identity (prompt, palette lock, reference frame) before queueing.
+            request = state.characters.apply_to_request(request.character_id, request)
         state.modes.get(request.mode)
         state.styles.get(request.style)
         if request.palette_id:
