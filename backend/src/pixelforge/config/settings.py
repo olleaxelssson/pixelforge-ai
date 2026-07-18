@@ -24,6 +24,14 @@ class Settings(BaseSettings):
     flux_model_id: str = "black-forest-labs/FLUX.1-schnell"
     diffusion_resolution: int = 1024
     diffusion_steps: int = 4
+    # Real-model quality pass (M2, D-002). All gated by backend availability (mock in CI).
+    # ``flux_quantization``: "none" (bf16) | "fp8" (optimum.quanto weight quant; needs the extra).
+    # ``flux_offload``: "auto" | "none" | "model" | "sequential" — VRAM/speed trade for FLUX.
+    flux_quantization: str = "none"
+    flux_offload: str = "auto"
+    # Optional ControlNet consuming the silhouette control map (M11). Empty = no ControlNet.
+    flux_controlnet_id: str = ""
+    flux_controlnet_scale: float = 0.6
 
     # Agentic planning layer (D-009/D-010). Off by default: the fast path uses prompt_builder and
     # reproduces existing output exactly. When enabled, agents build a Scene Graph that is compiled

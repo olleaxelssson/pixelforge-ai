@@ -12,10 +12,11 @@
 - Tests (pytest + vitest), lint (ruff/mypy/eslint/tsc), GitHub Actions CI
 
 ## M2 — Real-model quality pass
-- FLUX.1-schnell integration hardening: fp8 quantization path, CPU offload tiers, model download UI
+- ✅ (M16) FLUX.1-schnell integration hardening: fp8 quantization path, CPU offload tiers
+- ✅ (M16) ControlNet conditioning on the silhouette control map (M11); benchmark suite + golden regression
 - In-house pixel-art LoRA training + bundled LoRA
-- Sketch conditioning (ControlNet-union for FLUX), image→pixel-art img2img
-- Benchmark suite (speed, VRAM, output quality metrics) + golden-image regression tests
+- Image→pixel-art img2img; model download UI
+- (Real-GPU-only pieces of M16 — actual FLUX inference, VRAM numbers — need weights + a GPU)
 
 ## M3 — Animation
 - 13 action templates, seed-anchored frame batches, palette-locked sequences
@@ -138,3 +139,17 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   discipline, backend-regenerator path on the mock backend, API + CLI. Browser E2E: a noisy upload
   went 48% → 83% (PASS) in one accepted iteration.
 - Later: a VLM-backed `Critic` (same interface) for perceptual/semantic scoring beyond the heuristics.
+
+### M16 — Real-model quality pass (M2, D-002) ✅ (mock-verifiable parts)
+- FLUX backend hardened behind the `GenerationBackend` interface: **fp8** weight quantization
+  (optimum.quanto), **CPU-offload tiers** (`none`/`model`/`sequential`, `auto` by device), and a
+  **ControlNet** path that consumes the M11 silhouette control map (`spec.extra["silhouette_map"]`).
+- The FLUX *decisions* (dtype/offload/fp8/ControlNet routing) live in torch-free `flux_config.py`
+  and are fully unit-tested; the torch/diffusers calls stay behind `is_available()` (no GPU in CI).
+- **Golden-image regression** (`tests/golden/` + `test_golden.py`): the deterministic mock pipeline
+  is pixel-locked per (prompt, mode, size, seed, palette); `PIXELFORGE_UPDATE_GOLDEN=1` rewrites.
+- **Benchmark harness** (`generation/benchmark.py`, `pixelforge benchmark`): runs a fixed suite,
+  times each generation, and scores quality via the QA engine (D-013) — quality is measured, not
+  asserted; reports device + peak VRAM when a GPU is present. Runs in CI against the mock.
+- Needs real hardware to finish: actual FLUX inference, fp8/offload/VRAM numbers, ControlNet output
+  quality. The code paths are in place and gated; only execution-on-GPU remains.

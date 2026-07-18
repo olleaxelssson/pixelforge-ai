@@ -38,6 +38,7 @@ cd backend
 .venv/bin/pixelforge character create "Elias" --subject "Captain Elias, veteran knight"  # then: add-frame, drift, list
 .venv/bin/pixelforge generate "winter armor" --character <id>   # generate AS a stored character
 .venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends, plugins
+.venv/bin/pixelforge benchmark --backend mock   # time + QA-score a fixed suite (speed/quality/VRAM)
 .venv/bin/pixelforge system              # device / backend availability
 ```
 
@@ -68,7 +69,8 @@ cd frontend && npm run check     # eslint + tsc + vitest
 ## Code map
 
 - `backend/src/pixelforge/generation/pipeline.py` — 4-stage pipeline (diffusion → pixelize → palette → cleanup)
-- `backend/src/pixelforge/generation/backends/` — `mock.py`, `flux.py`; register new models in `registry.py`
+- `backend/src/pixelforge/generation/backends/` — `mock.py`, `flux.py` (M2: fp8/offload/ControlNet, decisions in torch-free `flux_config.py`); register new models in `registry.py`
+- `backend/src/pixelforge/generation/benchmark.py` — benchmark suite (M2): times + QA-scores generations; `pixelforge benchmark`. Golden-image regression in `backend/tests/golden/` (`PIXELFORGE_UPDATE_GOLDEN=1` to refresh)
 - `backend/src/pixelforge/core/scene_graph.py` — the `SceneGraph` (D-009): structured, typed plan for one generation
 - `backend/src/pixelforge/agents/` — agentic planning layer (D-010): seven agents (`intent`, `art-director`, `composition`, `silhouette`, `lighting`, `material`, `animation`), `PlanningRuntime`, swappable `planning_backends/` (deterministic `mock`); off by default (`planning_enabled`), compiled by `generation/plan_compiler.py` (incl. silhouette control map + provenance sidecar)
 - `backend/src/pixelforge/qa/` — Pixel QA engine (D-013): deterministic `detectors/` + safe repairs, `HeuristicCritic`, `QAEngine`; Layer 2 `repair_loop.py` (QA-gated region-repair loop, swappable `RegionRegenerator`); off by default (`qa_enabled`, `qa_repair_loop`), exposed via `POST /api/qa` and `pixelforge qa [--repair-loop]`

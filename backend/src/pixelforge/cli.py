@@ -161,6 +161,12 @@ def _build_parser() -> argparse.ArgumentParser:
         ],
     )
 
+    bench = sub.add_parser(
+        "benchmark", help="Run the benchmark suite through the active backend (quality + timing)"
+    )
+    bench.add_argument("--backend", default=None, help="Override backend (mock|flux-schnell|auto)")
+    bench.add_argument("-o", "--output", default=None, help="Write the JSON report to this path")
+
     sub.add_parser("system", help="Show device/backend availability as JSON")
     return parser
 
@@ -325,6 +331,55 @@ def _cmd_qa(args: argparse.Namespace) -> int:
     return 0
 
 
+def _peak_vram_mb() -> float | None:
+    """Peak CUDA memory since process start, in MB — None off CUDA or without torch."""
+    try:
+        import torch
+    except ImportError:
+        return None
+    if not torch.cuda.is_available():
+        return None
+    return round(torch.cuda.max_memory_allocated() / (1024 * 1024), 1)
+
+
+def _cmd_benchmark(args: argparse.Namespace) -> int:
+    import tempfile
+
+    from pixelforge.generation.backends.registry import get_backend
+    from pixelforge.generation.benchmark import default_suite, run_benchmark
+    from pixelforge.models_manager.device import resolve_device
+
+    settings = get_settings()
+    backend_name = args.backend or settings.backend
+    device = resolve_device(settings.device)
+    with tempfile.TemporaryDirectory(prefix="pixelforge-bench-") as tmp:
+        outputs_dir = Path(tmp)
+        modes = ModeRegistry()
+        styles = StyleRegistry(user_dir=settings.user_styles_dir)
+        pipeline = GenerationPipeline(
+            backend_name=backend_name,
+            outputs_dir=outputs_dir,
+            modes=modes,
+            styles=styles,
+            palettes=PaletteService(user_dir=settings.user_palettes_dir),
+            diffusion_resolution=settings.diffusion_resolution,
+            diffusion_steps=settings.diffusion_steps,
+        )
+        report = run_benchmark(
+            pipeline,
+            default_suite(),
+            outputs_dir,
+            backend=get_backend(backend_name).name,
+            device=device,
+            peak_vram_mb=_peak_vram_mb(),
+        )
+    if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+        Path(args.output).write_text(json.dumps(report.model_dump(), indent=2))
+    print(json.dumps(report.model_dump(), indent=2))
+    return 0
+
+
 def _cmd_character(args: argparse.Namespace) -> int:
     memory = _character_memory(get_settings())
     if args.character_command == "create":
@@ -413,6 +468,7 @@ def main(argv: list[str] | None = None) -> int:
         "plan": _cmd_plan,
         "palette": _cmd_palette,
         "qa": _cmd_qa,
+        "benchmark": _cmd_benchmark,
         "character": _cmd_character,
         "export": _cmd_export,
         "list": _cmd_list,

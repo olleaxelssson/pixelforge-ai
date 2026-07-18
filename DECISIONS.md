@@ -14,7 +14,10 @@ fallback viable. SDXL (OpenRAIL++) is optional/user-installed only; FLUX.1-dev r
 Diffusion output at native resolution is never true pixel art. The pipeline is
 diffusion (Stage A) → grid snap (B) → palette quantization (C) → cleanup (D). Stages B–D are pure,
 deterministic image processing: they enforce pixel-art quality, are unit-testable without weights,
-and make Stage A swappable.
+and make Stage A swappable. Real-model quality pass (M16): FLUX Stage A hardened with fp8 weight
+quantization, CPU-offload tiers, and ControlNet on the M11 silhouette map (decisions in torch-free
+`flux_config.py`); a golden-image regression pins the deterministic B–D output, and `pixelforge
+benchmark` measures speed + QA quality per backend.
 
 ## D-003: Two-process architecture (Electron/React UI + Python FastAPI backend)
 **Date:** 2026-07-15 · **Status:** Accepted (user-selected)
