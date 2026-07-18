@@ -146,8 +146,11 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   **ControlNet** path that consumes the M11 silhouette control map (`spec.extra["silhouette_map"]`).
 - The FLUX *decisions* (dtype/offload/fp8/ControlNet routing) live in torch-free `flux_config.py`
   and are fully unit-tested; the torch/diffusers calls stay behind `is_available()` (no GPU in CI).
-- **Golden-image regression** (`tests/golden/` + `test_golden.py`): the deterministic mock pipeline
-  is pixel-locked per (prompt, mode, size, seed, palette); `PIXELFORGE_UPDATE_GOLDEN=1` rewrites.
+- **Golden-image regression** (`tests/golden/` + `test_golden.py`): committed reference sprites per
+  (prompt, mode, size, seed, palette). Always-on check asserts version-robust structure (shape,
+  silhouette, palette budget) — the mock's float noise + Pillow median-cut aren't bit-reproducible
+  across CPUs — with byte-exact matching gated behind `PIXELFORGE_STRICT_GOLDEN=1` on the authoring
+  machine; `PIXELFORGE_UPDATE_GOLDEN=1` rewrites.
 - **Benchmark harness** (`generation/benchmark.py`, `pixelforge benchmark`): runs a fixed suite,
   times each generation, and scores quality via the QA engine (D-013) — quality is measured, not
   asserted; reports device + peak VRAM when a GPU is present. Runs in CI against the mock.
