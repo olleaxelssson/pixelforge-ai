@@ -20,6 +20,7 @@ export interface GenerationRequest {
   shading_style?: string;
   reference_image_base64?: string | null;
   reference_strength?: number;
+  character_id?: string | null;
 }
 
 export interface GeneratedImage {

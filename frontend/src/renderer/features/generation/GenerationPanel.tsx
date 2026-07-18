@@ -1,3 +1,6 @@
+import { useEffect } from "react";
+
+import { useCharactersStore } from "../../state/charactersStore";
 import { useGenerationStore } from "../../state/generationStore";
 import { PlanPreview } from "../plan/PlanPreview";
 
@@ -6,12 +9,41 @@ const SIZES = [16, 24, 32, 48, 64, 96, 128, 256];
 export function GenerationPanel() {
   const { modes, styles, palettes, request, backendOnline, updateRequest, submit } =
     useGenerationStore();
+  const characters = useCharactersStore((state) => state.characters);
+  const loadCharacters = useCharactersStore((state) => state.load);
+
+  useEffect(() => {
+    void loadCharacters();
+  }, [loadCharacters]);
 
   const mode = modes.find((m) => m.id === request.mode);
+  const activeCharacter = characters.find((c) => c.id === request.character_id);
 
   return (
     <aside className="panel">
       <h2>Generate</h2>
+
+      <div className="field">
+        <label>Generate as character</label>
+        <select
+          value={request.character_id ?? ""}
+          onChange={(e) => updateRequest({ character_id: e.target.value || null })}
+        >
+          <option value="">None (free generation)</option>
+          {characters.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        {activeCharacter && (
+          <label>
+            Locks {activeCharacter.name}&rsquo;s identity{
+              activeCharacter.palette_id ? " + palette" : ""
+            }; your prompt becomes the variation (e.g. &ldquo;winter armor&rdquo;).
+          </label>
+        )}
+      </div>
 
       <div className="field">
         <label>Mode</label>
@@ -44,7 +76,9 @@ export function GenerationPanel() {
         <label>Prompt</label>
         <textarea
           value={request.prompt}
-          placeholder="a knight with a flaming sword"
+          placeholder={
+            activeCharacter ? "winter armor (variation)" : "a knight with a flaming sword"
+          }
           onChange={(e) => updateRequest({ prompt: e.target.value })}
         />
       </div>

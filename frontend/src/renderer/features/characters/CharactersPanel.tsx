@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../../api/client";
-import { fileToBase64 } from "../../api/image";
+import { fileToBase64, imageUrlToBase64 } from "../../api/image";
 import { useCharactersStore } from "../../state/charactersStore";
 import { useGenerationStore } from "../../state/generationStore";
+import { recentResults } from "../generation/recentResults";
 
 function CreateForm() {
   const palettes = useGenerationStore((state) => state.palettes);
@@ -74,7 +75,11 @@ function CharacterDetail({ id }: { id: string }) {
   const addFrame = useCharactersStore((state) => state.addFrame);
   const checkDrift = useCharactersStore((state) => state.checkDrift);
   const remove = useCharactersStore((state) => state.remove);
+  const jobs = useGenerationStore((state) => state.jobs);
+  const jobOrder = useGenerationStore((state) => state.jobOrder);
   const [label, setLabel] = useState("passport");
+
+  const results = useMemo(() => recentResults(jobs, jobOrder), [jobs, jobOrder]);
 
   if (!character) return null;
 
@@ -86,6 +91,11 @@ function CharacterDetail({ id }: { id: string }) {
   const driftFrom = async (file: File | undefined) => {
     if (!file) return;
     await checkDrift(id, await fileToBase64(file));
+  };
+
+  const driftFromResult = async (filename: string) => {
+    if (!filename) return;
+    await checkDrift(id, await imageUrlToBase64(api.imageUrl(filename)));
   };
 
   return (
@@ -137,18 +147,37 @@ function CharacterDetail({ id }: { id: string }) {
         </div>
       </div>
 
-      <div className="field">
-        <label>Check drift against a sprite</label>
-        <input
-          type="file"
-          accept="image/*"
-          disabled={character.embedding.length === 0}
-          onChange={(e) => void driftFrom(e.target.files?.[0])}
-        />
-        {character.embedding.length === 0 && (
-          <label>Add a &ldquo;passport&rdquo; frame first to anchor the identity embedding.</label>
-        )}
+      <div className="field-row">
+        <div className="field">
+          <label>Check drift against a recent result</label>
+          <select
+            value=""
+            disabled={character.embedding.length === 0 || results.length === 0}
+            onChange={(e) => void driftFromResult(e.target.value)}
+          >
+            <option value="">{results.length ? "Choose a result…" : "No results yet"}</option>
+            {results.map((r) => (
+              <option key={r.filename} value={r.filename}>
+                {r.prompt.slice(0, 28) || r.filename}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>…or an uploaded sprite</label>
+          <input
+            type="file"
+            accept="image/*"
+            disabled={character.embedding.length === 0}
+            onChange={(e) => void driftFrom(e.target.files?.[0])}
+          />
+        </div>
       </div>
+      {character.embedding.length === 0 && (
+        <label className="hint-label">
+          Add a &ldquo;passport&rdquo; frame first to anchor the identity embedding.
+        </label>
+      )}
 
       <DriftBadge characterId={id} />
     </div>

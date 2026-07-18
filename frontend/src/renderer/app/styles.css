@@ -722,6 +722,13 @@ body {
   margin-bottom: 3px;
 }
 
+.hint-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
 .drift-badge {
   margin-top: 10px;
   padding: 8px 12px;

@@ -112,3 +112,14 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - Pure view helpers (`planView.ts`, `qaView.ts`) unit-tested; typed API client + image↔base64 helpers;
   verified end-to-end in a real browser (Playwright) against the live backend, zero console errors
 - Later: extension slots for plugin-contributed panels/tools (depends on M12's FE-slot follow-up)
+
+### M14 — Character-aware generation loop in the UI (D-011) ✅
+- Ties the M13 surfaces into one workflow: generate as a character → drift-check the result → QA it
+- **Generate as character** selector in the Generate panel: sets `character_id` so the backend prepends
+  the identity phrase, forces character mode, locks the palette, and rides the canonical frame as a
+  Stage-A reference; the typed prompt becomes the *variation* (e.g. "winter armor")
+- Characters panel: **check drift against a recent generation result** (not just an uploaded file),
+  closing the generate→verify loop in one place
+- QA panel: a **character reference frame** as a third sprite source
+- Pure `recentResults.ts` helper (shared by QA + Characters), unit-tested; browser E2E of the whole
+  loop (generate → 95% consistent drift → QA source) with zero console errors

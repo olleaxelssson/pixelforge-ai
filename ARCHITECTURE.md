@@ -93,7 +93,7 @@ Everything downstream of Stage A is deterministic and unit-testable without mode
 |---|---|
 | `main/` | Electron main process: window management, backend process supervision, native menus, multi-window. |
 | `renderer/app/` | App shell, routing, dark theme (CSS variables), dockable panel layout. |
-| `renderer/features/generation/` | Prompt/controls panel, mode & style pickers, queue view, results grid; inline Scene Graph **plan preview** (M13). |
+| `renderer/features/generation/` | Prompt/controls panel, mode & style pickers, queue view, results grid; inline Scene Graph **plan preview** (M13); **generate-as-character** selector (M14); `recentResults.ts` helper shared with QA/Characters. |
 | `renderer/features/editor/` | Canvas-based pixel editor: tools (pencil/eraser/fill/line/rect/ellipse/select/move), layers, onion skinning, timeline, grid/zoom, tile preview. |
 | `renderer/features/plan/` | Plan preview (M13, D-009/D-010): `POST /api/plan` → Scene Graph summary, silhouette grid, compiled prompt, agent trace. Pure `planView.ts` (tested). |
 | `renderer/features/qa/` | Pixel QA panel (M13, D-013): run detectors on a result/uploaded sprite, score bars + findings, apply safe repairs. Pure `qaView.ts` (tested). |

@@ -1,10 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../../api/client";
 import { decodeImage, fileToBase64, imageUrlToBase64 } from "../../api/image";
 import type { QAReport } from "../../api/types";
+import { useCharactersStore } from "../../state/charactersStore";
 import { useEditorStore } from "../../state/editorStore";
 import { useGenerationStore } from "../../state/generationStore";
+import { recentResults } from "../generation/recentResults";
 import { findingCounts, orderedFindings, scoreBars, scorePercent } from "./qaView";
 
 const LIGHTING = ["", "top-left", "top", "top-right", "left", "right", "bottom-left", "bottom"];
@@ -15,6 +17,12 @@ export function QAPanel() {
   const palettes = useGenerationStore((state) => state.palettes);
   const backendOnline = useGenerationStore((state) => state.backendOnline);
   const loadImageData = useEditorStore((state) => state.loadImageData);
+  const characters = useCharactersStore((state) => state.characters);
+  const loadCharacters = useCharactersStore((state) => state.load);
+
+  useEffect(() => {
+    void loadCharacters();
+  }, [loadCharacters]);
 
   // A sprite the panel is working on, as a PNG data URL.
   const [source, setSource] = useState<string | null>(null);
@@ -27,16 +35,17 @@ export function QAPanel() {
   const [paletteId, setPaletteId] = useState<string>("");
   const [lighting, setLighting] = useState<string>("");
 
-  const recentResults = useMemo(() => {
-    const items: { filename: string; prompt: string }[] = [];
-    for (const id of jobOrder) {
-      const job = jobs[id];
-      for (const image of job?.result?.images ?? []) {
-        items.push({ filename: image.filename, prompt: job.request.prompt });
-      }
-    }
-    return items.slice(0, 30);
-  }, [jobs, jobOrder]);
+  const results = useMemo(() => recentResults(jobs, jobOrder), [jobs, jobOrder]);
+  const characterFrames = useMemo(
+    () =>
+      characters.flatMap((c) =>
+        c.reference_frames.map((f) => ({
+          filename: f.filename,
+          label: `${c.name} · ${f.label}`,
+        })),
+      ),
+    [characters],
+  );
 
   const reset = () => {
     setReport(null);
@@ -100,15 +109,31 @@ export function QAPanel() {
           <label>Sprite from a recent result</label>
           <select
             value=""
-            disabled={recentResults.length === 0}
+            disabled={results.length === 0}
+            onChange={(e) => void pickResult(e.target.value)}
+          >
+            <option value="">{results.length ? "Choose a result…" : "No results yet"}</option>
+            {results.map((r) => (
+              <option key={r.filename} value={r.filename}>
+                {r.prompt.slice(0, 32) || r.filename}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label>…or a character reference frame</label>
+          <select
+            value=""
+            disabled={characterFrames.length === 0}
             onChange={(e) => void pickResult(e.target.value)}
           >
             <option value="">
-              {recentResults.length ? "Choose a result…" : "No results yet"}
+              {characterFrames.length ? "Choose a frame…" : "No character frames yet"}
             </option>
-            {recentResults.map((r) => (
-              <option key={r.filename} value={r.filename}>
-                {r.prompt.slice(0, 32) || r.filename}
+            {characterFrames.map((f) => (
+              <option key={f.filename} value={f.filename}>
+                {f.label}
               </option>
             ))}
           </select>
