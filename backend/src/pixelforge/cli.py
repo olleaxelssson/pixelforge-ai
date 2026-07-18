@@ -118,6 +118,14 @@ def _build_parser() -> argparse.ArgumentParser:
     qac.add_argument(
         "--repair", action="store_true", help="Apply safe repairs and write the result"
     )
+    qac.add_argument(
+        "--repair-loop",
+        action="store_true",
+        help="Layer 2: regenerate failing regions in a bounded loop (implies --repair output)",
+    )
+    qac.add_argument(
+        "--max-iter", type=int, default=2, help="Max repair-loop iterations (with --repair-loop)"
+    )
     qac.add_argument("-o", "--output", default=None, help="Output path for the repaired PNG")
 
     chr_parser = sub.add_parser("character", help="Manage stored characters (identity memory)")
@@ -295,12 +303,22 @@ def _cmd_qa(args: argparse.Namespace) -> int:
         lighting_direction=args.lighting,
     )
     engine = QAEngine(pass_threshold=settings.qa_pass_threshold)
-    if args.repair:
+    if args.repair_loop:
+        from pixelforge.qa.repair_loop import RepairLoop
+
+        final, loop_report = RepairLoop(engine=engine, max_iterations=max(1, args.max_iter)).run(
+            image, context
+        )
+        if args.output:
+            Path(args.output).parent.mkdir(parents=True, exist_ok=True)
+            final.save(args.output)
+        payload: object = {"repair_loop": loop_report.model_dump(), "output": args.output}
+    elif args.repair:
         repaired, report = engine.repair(image, context)
         if args.output:
             Path(args.output).parent.mkdir(parents=True, exist_ok=True)
             repaired.save(args.output)
-        payload: object = {"report": report.model_dump(), "output": args.output}
+        payload = {"report": report.model_dump(), "output": args.output}
     else:
         payload = engine.run(image, context).model_dump()
     print(json.dumps(payload, indent=2))

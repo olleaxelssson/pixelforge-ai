@@ -23,6 +23,7 @@ from pixelforge.plugins.loader import load_plugins
 from pixelforge.plugins.manifest import PluginReport
 from pixelforge.projects.store import ProjectStore
 from pixelforge.qa.engine import QAEngine
+from pixelforge.qa.repair_loop import RepairLoop
 from pixelforge.styles.registry import StyleRegistry
 
 
@@ -57,6 +58,11 @@ def build_app_state() -> AppState:
         else None
     )
     qa = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    repair_loop = (
+        RepairLoop(engine=qa, max_iterations=settings.qa_repair_max_iterations)
+        if (settings.qa_enabled and settings.qa_repair_loop)
+        else None
+    )
     characters = CharacterMemory(
         store=CharacterStore(characters_dir=settings.characters_dir),
         embeddings=get_embedding_backend(settings.memory_embedding_backend),
@@ -72,6 +78,7 @@ def build_app_state() -> AppState:
         diffusion_steps=settings.diffusion_steps,
         planner=planner,
         qa_engine=qa if (settings.qa_enabled and settings.qa_autorepair) else None,
+        repair_loop=repair_loop,
     )
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { api } from "../../api/client";
 import { decodeImage, fileToBase64, imageUrlToBase64 } from "../../api/image";
-import type { QAReport } from "../../api/types";
+import type { QAReport, RepairLoopReport } from "../../api/types";
 import { useCharactersStore } from "../../state/charactersStore";
 import { useEditorStore } from "../../state/editorStore";
 import { useGenerationStore } from "../../state/generationStore";
@@ -28,6 +28,7 @@ export function QAPanel() {
   const [source, setSource] = useState<string | null>(null);
   const [repaired, setRepaired] = useState<string | null>(null);
   const [report, setReport] = useState<QAReport | null>(null);
+  const [loopReport, setLoopReport] = useState<RepairLoopReport | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +51,7 @@ export function QAPanel() {
   const reset = () => {
     setReport(null);
     setRepaired(null);
+    setLoopReport(null);
     setError(null);
   };
 
@@ -69,7 +71,7 @@ export function QAPanel() {
     setSource(await fileToBase64(file));
   };
 
-  const run = async (repair: boolean) => {
+  const run = async (mode: "run" | "repair" | "loop") => {
     if (!source) return;
     setBusy(true);
     setError(null);
@@ -79,10 +81,12 @@ export function QAPanel() {
         max_colors: maxColors,
         palette_id: paletteId || null,
         lighting_direction: lighting || null,
-        repair,
+        repair: mode === "repair",
+        repair_loop: mode === "loop",
       });
       setReport(response.report);
-      if (repair && response.repaired_image_base64) {
+      setLoopReport(response.repair_loop);
+      if (mode !== "run" && response.repaired_image_base64) {
         setRepaired(`data:image/png;base64,${response.repaired_image_base64}`);
       }
     } catch (e) {
@@ -187,18 +191,26 @@ export function QAPanel() {
           <button
             className="primary-button"
             disabled={!backendOnline || !source || busy}
-            onClick={() => void run(false)}
+            onClick={() => void run("run")}
           >
             {busy ? "Running…" : "Run QA"}
           </button>
           <button
             className="secondary-button"
             disabled={!backendOnline || !source || busy}
-            onClick={() => void run(true)}
+            onClick={() => void run("repair")}
           >
             Apply safe repairs
           </button>
         </div>
+        <button
+          className="secondary-button regenerate-button"
+          disabled={!backendOnline || !source || busy}
+          onClick={() => void run("loop")}
+          title="Layer 2 (D-013): critique → regenerate only the failing regions, bounded"
+        >
+          Regenerate failing regions
+        </button>
 
         {error && <div className="error-text">{error}</div>}
       </div>
@@ -228,6 +240,30 @@ export function QAPanel() {
                 </figcaption>
               </figure>
             )}
+          </div>
+        )}
+
+        {loopReport && (
+          <div className={`repair-loop ${loopReport.improved ? "improved" : "flat"}`}>
+            <div className="repair-loop-head">
+              Repair loop · {loopReport.iterations} iteration
+              {loopReport.iterations === 1 ? "" : "s"} ·{" "}
+              {scorePercent(loopReport.initial.scores.overall)}% →{" "}
+              {scorePercent(loopReport.final.scores.overall)}%{" "}
+              {loopReport.improved ? "(improved)" : "(no change)"}
+            </div>
+            {loopReport.attempts.map((a) => (
+              <div key={a.iteration} className="repair-attempt">
+                <span>#{a.iteration}</span>
+                <span>{a.regions} region(s), {a.pixels}px</span>
+                <span>
+                  {scorePercent(a.overall_before)}% → {scorePercent(a.overall_after)}%
+                </span>
+                <span className={a.accepted ? "accepted" : "rejected"}>
+                  {a.accepted ? "accepted" : "rejected"}
+                </span>
+              </div>
+            ))}
           </div>
         )}
 

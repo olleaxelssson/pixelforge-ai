@@ -12,6 +12,7 @@ from pydantic import BaseModel
 from pixelforge.api.state import AppState, get_state
 from pixelforge.core.errors import UnknownRegistryKeyError
 from pixelforge.qa.models import DetectorContext, QAReport
+from pixelforge.qa.repair_loop import RepairLoop, RepairLoopReport
 
 router = APIRouter(prefix="/api/qa", tags=["qa"])
 
@@ -23,11 +24,15 @@ class QARequest(BaseModel):
     palette_id: str | None = None
     lighting_direction: str | None = None
     repair: bool = False
+    # Layer 2 (D-013): regenerate failing regions for up to ``max_iterations`` bounded passes.
+    repair_loop: bool = False
+    max_iterations: int = 2
 
 
 class QAResponse(BaseModel):
     report: QAReport
     repaired_image_base64: str | None = None
+    repair_loop: RepairLoopReport | None = None
 
 
 def _decode(data: str) -> Image.Image:
@@ -55,6 +60,16 @@ async def run_qa(request: QARequest, state: AppState = Depends(get_state)) -> QA
         palette=palette,
         lighting_direction=request.lighting_direction,
     )
+
+    if request.repair_loop:
+        loop = RepairLoop(engine=state.qa, max_iterations=max(1, min(request.max_iterations, 5)))
+        final, loop_report = loop.run(image, context)
+        buffer = io.BytesIO()
+        final.save(buffer, format="PNG")
+        encoded = base64.b64encode(buffer.getvalue()).decode()
+        return QAResponse(
+            report=loop_report.final, repaired_image_base64=encoded, repair_loop=loop_report
+        )
 
     if request.repair:
         repaired, report = state.qa.repair(image, context)

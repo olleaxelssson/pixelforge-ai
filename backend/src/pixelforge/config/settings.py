@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     qa_enabled: bool = False
     qa_autorepair: bool = True
     qa_pass_threshold: float = 0.6
+    # QA Layer 2 (D-013): the critique -> repair loop. When enabled (and QA is on), a sprite that
+    # still fails after safe repair has its failing regions regenerated for up to N bounded passes.
+    qa_repair_loop: bool = False
+    qa_repair_max_iterations: int = 2
 
     # Plugin SDK (D-014). Off by default: plugins load only when enabled AND their distribution
     # name is on the explicit allowlist — plugins run in-process with full trust.

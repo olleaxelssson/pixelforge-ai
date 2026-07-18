@@ -65,7 +65,7 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   silhouette, pillow shading, light-direction — with safe auto-repair for the first three
 - Deterministic `HeuristicCritic` (reuses D-012) + `QAEngine` (run/repair); findings on the Scene Graph
 - Opt-in pipeline hook (`qa_enabled`); `POST /api/qa`; `pixelforge qa` (`--repair`); all detectors tested
-- Later: Layer-2 VLM critic and the diffusion region-repair loop (regenerate only failing regions)
+- Layer 2 (region-repair loop) landed in **M15**; a VLM critic is the remaining follow-up
 
 ### M10 — Character Memory (D-011) ✅ (Tier 1)
 - `memory/`: `Character` (identity fragment + locked palette + reference frames + embedding),
@@ -123,3 +123,18 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - QA panel: a **character reference frame** as a third sprite source
 - Pure `recentResults.ts` helper (shared by QA + Characters), unit-tested; browser E2E of the whole
   loop (generate → 95% consistent drift → QA source) with zero console errors
+
+### M15 — Close the critique loop: QA-gated repair loop (D-013 Layer 2) ✅
+- The "critique" half the architecture is named for: after QA, **regenerate only the failing
+  regions** and re-score, accepting a candidate only when the overall score *strictly improves* and
+  no new errors appear. Bounded (`max_iterations`) and monotonic → always terminates.
+- `qa/repair_loop.py`: `RepairLoop` + a swappable `RegionRegenerator` — `DeterministicInpaintRegenerator`
+  (median denoise + palette snap, mask-scoped, runs in CI) and `BackendRegionRegenerator` (the real
+  img2img-on-the-crop path via a `GenerationBackend`, works with the mock too). Only masked pixels change.
+- Wired behind `qa_repair_loop` (pipeline), `POST /api/qa {repair_loop:true}`, and
+  `pixelforge qa --repair-loop`; exposed in the QA tab as **"Regenerate failing regions"** with a
+  per-iteration report (before→after score, accepted/rejected).
+- Tests: convergence (noisy sprite cleaned, score up), non-improving candidate rejected, mask
+  discipline, backend-regenerator path on the mock backend, API + CLI. Browser E2E: a noisy upload
+  went 48% → 83% (PASS) in one accepted iteration.
+- Later: a VLM-backed `Critic` (same interface) for perceptual/semantic scoring beyond the heuristics.

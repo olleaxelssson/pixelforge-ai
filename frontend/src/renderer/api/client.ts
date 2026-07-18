@@ -52,6 +52,8 @@ export const api = {
     palette_id?: string | null;
     lighting_direction?: string | null;
     repair?: boolean;
+    repair_loop?: boolean;
+    max_iterations?: number;
   }) => request<QAResponse>("/api/qa", { method: "POST", body: JSON.stringify(body) }),
 
   paletteAnalysis: (paletteId: string) =>

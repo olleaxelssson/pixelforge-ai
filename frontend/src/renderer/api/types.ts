@@ -184,9 +184,27 @@ export interface QAReport {
   findings: Finding[];
 }
 
+export interface RepairAttempt {
+  iteration: number;
+  regions: number;
+  pixels: number;
+  overall_before: number;
+  overall_after: number;
+  accepted: boolean;
+}
+
+export interface RepairLoopReport {
+  iterations: number;
+  improved: boolean;
+  initial: QAReport;
+  final: QAReport;
+  attempts: RepairAttempt[];
+}
+
 export interface QAResponse {
   report: QAReport;
   repaired_image_base64: string | null;
+  repair_loop: RepairLoopReport | null;
 }
 
 // --- Palette intelligence (D-012) ---

@@ -44,6 +44,7 @@ from pixelforge.styles.registry import StyleRegistry
 if TYPE_CHECKING:
     from pixelforge.agents.runtime import PlanningRuntime
     from pixelforge.qa.engine import QAEngine
+    from pixelforge.qa.repair_loop import RepairLoop
 
 ProgressCallback = Callable[[str, float], None]
 
@@ -60,6 +61,7 @@ class GenerationPipeline:
         diffusion_steps: int = 4,
         planner: PlanningRuntime | None = None,
         qa_engine: QAEngine | None = None,
+        repair_loop: RepairLoop | None = None,
     ) -> None:
         self._backend_name = backend_name
         self._outputs_dir = outputs_dir
@@ -70,6 +72,7 @@ class GenerationPipeline:
         self._steps = diffusion_steps
         self._planner = planner
         self._qa = qa_engine
+        self._repair_loop = repair_loop
 
     def run(
         self, job_id: str, request: GenerationRequest, on_progress: ProgressCallback
@@ -131,14 +134,17 @@ class GenerationPipeline:
             else:
                 sprite = sprite.convert("RGB").convert("RGBA")
 
-            if self._qa is not None:
+            if self._qa is not None or self._repair_loop is not None:
                 context = DetectorContext(
                     max_colors=request.max_colors,
                     transparent_background=request.transparent_background,
                     palette=colors if request.palette_id else None,
                     lighting_direction=request.lighting_direction,
                 )
-                sprite, _ = self._qa.repair(sprite, context)
+                if self._qa is not None:
+                    sprite, _ = self._qa.repair(sprite, context)
+                if self._repair_loop is not None:
+                    sprite, _ = self._repair_loop.run(sprite, context)
 
             filename = f"{job_id}_{index}.png"
             sprite.save(self._outputs_dir / filename)

@@ -22,7 +22,7 @@ decisions that need it. Short foundational decisions (D-001…D-008) stay inline
 | [D-010](D-010-agent-runtime-planning-backend.md) | Agent runtime & `PlanningBackend` interface | Accepted (M7 foundation) |
 | [D-011](D-011-character-memory.md) | Character Memory (identity persistence, no drift) | Accepted (M10: Tier 1) |
 | [D-012](D-012-palette-intelligence.md) | Palette Intelligence (ranking, contrast, CVD, readability) | Accepted (M8) |
-| [D-013](D-013-pixel-qa-and-critic.md) | Pixel QA engine & AI critic | Accepted (M9: Layer 1) |
+| [D-013](D-013-pixel-qa-and-critic.md) | Pixel QA engine & AI critic | Accepted (M9: Layer 1; M15: Layer-2 repair loop) |
 | [D-014](D-014-agent-tool-plugin-sdk.md) | Agent / Tool Plugin SDK | Accepted (M12) |
 
 Context and the comparative research that motivates these ADRs live in

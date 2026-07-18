@@ -544,6 +544,47 @@ body {
   color: var(--text-dim);
 }
 
+.regenerate-button {
+  margin-top: 8px;
+}
+
+.repair-loop {
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+
+.repair-loop.improved {
+  border-left-color: var(--success);
+}
+
+.repair-loop.flat {
+  border-left-color: var(--text-dim);
+}
+
+.repair-loop-head {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.repair-attempt {
+  display: flex;
+  gap: 12px;
+  color: var(--text-dim);
+  padding: 2px 0;
+}
+
+.repair-attempt .accepted {
+  color: var(--success);
+}
+
+.repair-attempt .rejected {
+  color: var(--text-dim);
+}
+
 .score-bars {
   display: flex;
   flex-direction: column;

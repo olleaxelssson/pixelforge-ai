@@ -1,8 +1,10 @@
 # D-013: Pixel QA engine & AI critic
 
-- **Status:** Accepted — Layer 1 implemented in M9 (`qa/` package: deterministic detectors +
-  safe repairs, deterministic `HeuristicCritic`, `QAEngine`, opt-in pipeline hook, API + CLI).
-  The Layer-2 VLM critic and the diffusion region-repair loop remain later milestones.
+- **Status:** Accepted — Layer 1 (M9): `qa/` deterministic detectors + safe repairs,
+  `HeuristicCritic`, `QAEngine`, opt-in pipeline hook, API + CLI. Layer 2 (M15): the QA-gated
+  **repair loop** (`qa/repair_loop.py`) — critique → regenerate only the failing regions, bounded
+  and monotonic, via a swappable `RegionRegenerator` (deterministic inpaint + real-backend img2img).
+  A VLM-backed `Critic` (the same interface) remains the one later piece.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** extends `pixelize/cleanup.py`; consumes D-009 (writes findings into the Scene Graph),
