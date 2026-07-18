@@ -69,6 +69,7 @@ sequenceDiagram
 | `exporters/` | PNG, GIF, sprite sheet, texture atlas (JSON), Unity (`.meta`-ready layout), Godot (`.tres`/import hints), Unreal (padded POT sheets). Registry pattern — new exporters register themselves. |
 | `projects/` | Project files (JSON on disk), autosave, session recovery. |
 | `models_manager/` | Model discovery, download, cache dirs, device selection (CUDA → MPS → CPU). |
+| `plugins/` | Plugin SDK (D-014, M12): `loader.py` discovers `pixelforge.*` entry points across installed distributions, validates each against a required `PluginManifest` (`manifest.py`, semver plugin API), and registers components into the existing registries (agents, exporters, QA detectors, generation/planning/embedding backends). Disabled by default; loads only allowlisted distributions with per-component failure isolation. Surfaced at `GET /api/plugins` and `pixelforge list plugins`. |
 
 ### Key Interfaces
 

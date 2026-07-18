@@ -37,7 +37,7 @@ cd backend
 .venv/bin/pixelforge qa sprite.png --repair -o fixed.png  # detect defects; --repair applies safe fixes
 .venv/bin/pixelforge character create "Elias" --subject "Captain Elias, veteran knight"  # then: add-frame, drift, list
 .venv/bin/pixelforge generate "winter armor" --character <id>   # generate AS a stored character
-.venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends
+.venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends, plugins
 .venv/bin/pixelforge system              # device / backend availability
 ```
 
@@ -74,6 +74,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/qa/` — Pixel QA engine (D-013): deterministic `detectors/` + safe repairs, `HeuristicCritic`, `QAEngine`; off by default (`qa_enabled`), exposed via `POST /api/qa` and `pixelforge qa`
 - `backend/src/pixelforge/memory/` — character memory (D-011): `Character` store + reference frames + identity embeddings (mock backend), drift gate; opt-in per request via `character_id`, exposed via `/api/characters` and `pixelforge character`
 - `backend/src/pixelforge/palettes/`, `styles/`, `modes/`, `exporters/`, `animation/` — data-driven registries; extend by adding entries, not by editing consumers
+- `backend/src/pixelforge/plugins/` — Plugin SDK (D-014): `loader.py` discovers `pixelforge.*` entry points + required `PluginManifest`, registers into existing registries; off by default (`plugins_enabled` + `plugin_allowlist`), exposed via `GET /api/plugins` and `pixelforge list plugins`. Guide: `docs/developer/plugins.md`; sample: `examples/plugins/pixelforge-hello`
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)
 - `frontend/src/shared/config.ts` — frontend configuration

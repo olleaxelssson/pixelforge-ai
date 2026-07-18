@@ -19,6 +19,8 @@ from pixelforge.memory.service import CharacterMemory
 from pixelforge.memory.store import CharacterStore
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.service import PaletteService
+from pixelforge.plugins.loader import load_plugins
+from pixelforge.plugins.manifest import PluginReport
 from pixelforge.projects.store import ProjectStore
 from pixelforge.qa.engine import QAEngine
 from pixelforge.styles.registry import StyleRegistry
@@ -36,10 +38,13 @@ class AppState:
     planner: PlanningRuntime | None
     qa: QAEngine
     characters: CharacterMemory
+    plugins: PluginReport
 
 
 def build_app_state() -> AppState:
     settings = get_settings()
+    # Plugins register into the registries below, so they load before anything consumes them.
+    plugins = load_plugins(settings)
     modes = ModeRegistry()
     styles = StyleRegistry(user_dir=settings.user_styles_dir)
     palettes = PaletteService(user_dir=settings.user_palettes_dir)
@@ -92,6 +97,7 @@ def build_app_state() -> AppState:
         planner=planner,
         qa=qa,
         characters=characters,
+        plugins=plugins,
     )
 
 

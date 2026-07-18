@@ -18,6 +18,7 @@ from pixelforge.api.routers import (
     generation,
     palettes,
     plan,
+    plugins,
     projects,
     qa,
 )
@@ -52,6 +53,7 @@ app.include_router(projects.router)
 app.include_router(plan.router)
 app.include_router(qa.router)
 app.include_router(characters.router)
+app.include_router(plugins.router)
 
 
 @app.get("/api/health")

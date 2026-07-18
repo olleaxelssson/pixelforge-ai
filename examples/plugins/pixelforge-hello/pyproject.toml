@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pixelforge-hello"
+version = "0.1.0"
+description = "Sample PixelForge plugin: an ASCII-art exporter and a checkerboard-noise QA detector"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = ["pixelforge", "numpy>=1.26"]
+
+# The manifest entry point is required; component groups are optional.
+[project.entry-points."pixelforge.manifest"]
+manifest = "pixelforge_hello:MANIFEST"
+
+[project.entry-points."pixelforge.exporters"]
+ascii = "pixelforge_hello:AsciiArtExporter"
+
+[project.entry-points."pixelforge.qa_detectors"]
+checkerboard = "pixelforge_hello:CheckerboardDetector"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pixelforge_hello"]

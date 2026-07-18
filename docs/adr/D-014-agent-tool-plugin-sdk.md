@@ -1,6 +1,7 @@
 # D-014: Agent / Tool Plugin SDK
 
-- **Status:** Proposed (Phase 1 design; pending review)
+- **Status:** Accepted — implemented M12 (loader, manifest, six entry-point groups, allowlist trust
+  model, sample plugin). Future tiers (frontend slots, subprocess/WASM isolation) remain open.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** generalizes the existing registries (D-005) and the `GenerationBackend`/`Exporter`
@@ -98,6 +99,29 @@ the detailed FE contract is deferred to its own ADR/impl and is not required for
 | Sample plugins | `examples/plugins/` |
 | Settings | plugin allowlist / enable flags in `config/settings.py` |
 | Docs | new `docs/developer/plugins.md` (contracts, versioning, security) |
+
+## Implementation notes (M12)
+
+Shipped as designed, with these concrete choices:
+
+- **Entry-point groups (six + manifest):** `pixelforge.manifest` (required, exactly one) plus
+  `pixelforge.agents`, `pixelforge.exporters`, `pixelforge.qa_detectors`,
+  `pixelforge.generation_backends`, `pixelforge.planning_backends`, `pixelforge.embedding_backends`.
+  The remaining groups from the design table (`tools`, `palette_analyzers`, `animation_modules`,
+  `prompt_optimizers`) arrive with their subsystems — the loader is table-driven, so adding a group
+  is one `COMPONENT_GROUPS` entry plus one `_register_component` branch.
+- **Manifest & versioning:** `PluginManifest` (pydantic) carries `name/version/author/description/
+  api_version/capabilities`. `PLUGIN_API_VERSION = "1.0"`; a plugin whose **major** differs is
+  refused, a newer **minor** loads with a warning.
+- **Trust model:** `plugins_enabled=false` by default; a distribution loads only when enabled AND on
+  the `plugin_allowlist`. Entry points may resolve to an instance, a class, or a zero-arg factory;
+  each is normalized and `isinstance`-checked against the group interface. Per-component failures are
+  isolated (logged, recorded in the plugin's `errors`); a distribution whose components all fail is
+  skipped whole. Loading is idempotent (cached report).
+- **Surfaces:** `GET /api/plugins` and `pixelforge list plugins` return the `PluginReport`
+  (enabled, api_version, loaded, skipped-with-reasons). Discovery is injectable, so the loader is
+  tested with no packages installed; the sample `examples/plugins/pixelforge-hello` proves the real
+  entry-point path (ASCII-art exporter + checkerboard-noise detector).
 
 ## Consequences & open questions
 

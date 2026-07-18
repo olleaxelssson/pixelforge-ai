@@ -87,6 +87,14 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   whenever planning is active
 - Later: cross-frame animation consistency (M3 reference-frame work)
 
-### M12 — Plugin SDK & marketplace architecture (D-014)
-- Entry-point plugin loader + manifest; stabilized, versioned extension interfaces; sample plugins
-- Developer docs (contracts, versioning, security); frontend extension slots
+### M12 — Plugin SDK & marketplace architecture (D-014) ✅
+- Entry-point plugin loader (`plugins/loader.py`) + required `PluginManifest`; discovers `pixelforge.*`
+  groups across installed distributions, validates, and registers into existing registries
+- Six versioned extension interfaces: agents, exporters, QA detectors, generation backends,
+  planning backends, embedding backends — each with a `register_*` hook; new groups are table-driven
+- Semver plugin API (`PLUGIN_API_VERSION = "1.0"`): major mismatch refused, newer minor warns
+- Trust model: disabled by default, explicit allowlist, per-component failure isolation, idempotent
+  load; surfaced at `GET /api/plugins` and `pixelforge list plugins`
+- Working sample `examples/plugins/pixelforge-hello` (ASCII exporter + checkerboard-noise detector)
+  and developer guide `docs/developer/plugins.md`; injectable discovery keeps tests hermetic
+- Later: frontend extension slots (panels/tools), subprocess/WASM isolation for untrusted plugins

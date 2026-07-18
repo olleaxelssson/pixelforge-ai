@@ -7,6 +7,7 @@ e.g. ``PIXELFORGE_BACKEND=mock`` or ``PIXELFORGE_PORT=9000``.
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +36,11 @@ class Settings(BaseSettings):
     qa_enabled: bool = False
     qa_autorepair: bool = True
     qa_pass_threshold: float = 0.6
+
+    # Plugin SDK (D-014). Off by default: plugins load only when enabled AND their distribution
+    # name is on the explicit allowlist — plugins run in-process with full trust.
+    plugins_enabled: bool = False
+    plugin_allowlist: list[str] = Field(default_factory=list)
 
     # Character memory (D-011). Always available (opt-in per request via ``character_id``).
     # ``memory_embedding_backend`` selects the identity-embedding provider ("mock" ships in M10);

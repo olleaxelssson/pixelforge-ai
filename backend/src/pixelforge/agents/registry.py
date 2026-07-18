@@ -26,10 +26,17 @@ BUILTIN_AGENTS: list[Agent] = [
     AnimationAgent(),
 ]
 
+_PLUGIN_AGENTS: list[Agent] = []
+
+
+def register_agent(agent: Agent) -> None:
+    """Add a plugin agent to the default set (D-014); same-name agents override earlier ones."""
+    _PLUGIN_AGENTS.append(agent)
+
 
 class AgentRegistry:
     def __init__(self, agents: list[Agent] | None = None) -> None:
-        chosen = agents if agents is not None else BUILTIN_AGENTS
+        chosen = agents if agents is not None else [*BUILTIN_AGENTS, *_PLUGIN_AGENTS]
         self._agents: dict[str, Agent] = {a.name: a for a in chosen}
 
     def list(self) -> list[Agent]:

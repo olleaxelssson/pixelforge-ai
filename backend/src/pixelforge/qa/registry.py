@@ -24,10 +24,17 @@ BUILTIN_DETECTORS: list[Detector] = [
     LightDirectionDetector(),
 ]
 
+_PLUGIN_DETECTORS: list[Detector] = []
+
+
+def register_detector(detector: Detector) -> None:
+    """Add a plugin QA detector to the default set (D-014); same names override earlier ones."""
+    _PLUGIN_DETECTORS.append(detector)
+
 
 class DetectorRegistry:
     def __init__(self, detectors: list[Detector] | None = None) -> None:
-        chosen = detectors if detectors is not None else BUILTIN_DETECTORS
+        chosen = detectors if detectors is not None else [*BUILTIN_DETECTORS, *_PLUGIN_DETECTORS]
         self._detectors: dict[str, Detector] = {d.name: d for d in chosen}
 
     def list(self) -> list[Detector]:

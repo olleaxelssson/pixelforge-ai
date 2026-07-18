@@ -17,6 +17,11 @@ _BACKENDS: dict[str, Callable[[], PlanningBackend]] = {
 }
 
 
+def register_planning_backend(factory: Callable[[], PlanningBackend]) -> None:
+    """Register a plugin planning backend (D-014), keyed by the instance's ``name``."""
+    _BACKENDS[factory().name] = factory
+
+
 def get_planning_backend(name: str) -> PlanningBackend:
     """Return a planning backend by id. ``auto``/empty resolves to the best available (mock)."""
     if name in ("auto", ""):

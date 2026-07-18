@@ -46,6 +46,7 @@ from pixelforge.palettes.analysis import (
     simulate_cvd_palette,
 )
 from pixelforge.palettes.service import PaletteService
+from pixelforge.plugins.loader import load_plugins
 from pixelforge.qa.engine import QAEngine
 from pixelforge.qa.models import DetectorContext
 from pixelforge.styles.registry import StyleRegistry
@@ -141,7 +142,15 @@ def _build_parser() -> argparse.ArgumentParser:
     lst = sub.add_parser("list", help="List available catalog entries as JSON")
     lst.add_argument(
         "what",
-        choices=["modes", "styles", "palettes", "export-formats", "backends", "planning-backends"],
+        choices=[
+            "modes",
+            "styles",
+            "palettes",
+            "export-formats",
+            "backends",
+            "planning-backends",
+            "plugins",
+        ],
     )
 
     sub.add_parser("system", help="Show device/backend availability as JSON")
@@ -355,6 +364,8 @@ def _cmd_list(args: argparse.Namespace) -> int:
         payload = list_exporters()
     elif args.what == "planning-backends":
         payload = list_planning_backends()
+    elif args.what == "plugins":
+        payload = load_plugins(settings).model_dump(mode="json")
     else:
         payload = list_backends()
     print(json.dumps(payload, indent=2))
@@ -378,6 +389,7 @@ def _cmd_system(_: argparse.Namespace) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
+    load_plugins(get_settings())  # register plugin components before any command runs
     handlers = {
         "generate": _cmd_generate,
         "plan": _cmd_plan,

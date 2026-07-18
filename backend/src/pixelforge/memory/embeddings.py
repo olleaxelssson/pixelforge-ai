@@ -50,6 +50,11 @@ _BACKENDS: dict[str, Callable[[], EmbeddingBackend]] = {
 }
 
 
+def register_embedding_backend(factory: Callable[[], EmbeddingBackend]) -> None:
+    """Register a plugin embedding backend (D-014), keyed by the instance's ``name``."""
+    _BACKENDS[factory().name] = factory
+
+
 def get_embedding_backend(name: str) -> EmbeddingBackend:
     if name in ("auto", ""):
         name = "mock"

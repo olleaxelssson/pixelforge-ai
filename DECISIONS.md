@@ -109,7 +109,7 @@ masking failing regions for a bounded region-repair loop (K≤2). Both mockable;
 against a golden set to avoid false rejects.
 
 ## D-014: Agent / Tool Plugin SDK
-**Date:** 2026-07-16 · **Status:** Proposed · **ADR:** [docs/adr/D-014-agent-tool-plugin-sdk.md](docs/adr/D-014-agent-tool-plugin-sdk.md)
+**Date:** 2026-07-16 · **Status:** Accepted (M12) · **ADR:** [docs/adr/D-014-agent-tool-plugin-sdk.md](docs/adr/D-014-agent-tool-plugin-sdk.md)
 
 Standard Python entry points over the registry pattern let third parties add agents, tools, prompt
 optimizers, exporters, tile/animation modules, palette analyzers, and QA detectors without editing
