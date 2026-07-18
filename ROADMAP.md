@@ -98,3 +98,17 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - Working sample `examples/plugins/pixelforge-hello` (ASCII exporter + checkerboard-noise detector)
   and developer guide `docs/developer/plugins.md`; injectable discovery keeps tests hermetic
 - Later: frontend extension slots (panels/tools), subprocess/WASM isolation for untrusted plugins
+
+### M13 — Surface the agentic layer in the UI (D-009…D-013) ✅
+- The M7–M12 backend was CLI/API-only; M13 brings it into the Electron/React app as new nav views
+- **Plan preview** inline in Generate (`POST /api/plan`): Scene Graph summary (subject, parts,
+  materials, composition, lighting, palette), silhouette occupancy grid, compiled prompt, agent trace
+- **QA** view (`POST /api/qa`): load a recent result or an uploaded PNG, deterministic detectors →
+  score bars + severity-ranked findings, one-click "apply safe repairs", open the repair in the editor
+- **Characters** view (`/api/characters`): list/create, add reference frames (passport anchors the
+  identity embedding), cosine-similarity drift meter against a sprite
+- **Palette Lab** view (`/api/palettes/{id}/analysis`): readability/contrast/ΔE metrics, suggestions,
+  shading ramps, near-duplicate detection, color-vision-deficiency simulation
+- Pure view helpers (`planView.ts`, `qaView.ts`) unit-tested; typed API client + image↔base64 helpers;
+  verified end-to-end in a real browser (Playwright) against the live backend, zero console errors
+- Later: extension slots for plugin-contributed panels/tools (depends on M12's FE-slot follow-up)

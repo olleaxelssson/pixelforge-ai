@@ -93,12 +93,15 @@ Everything downstream of Stage A is deterministic and unit-testable without mode
 |---|---|
 | `main/` | Electron main process: window management, backend process supervision, native menus, multi-window. |
 | `renderer/app/` | App shell, routing, dark theme (CSS variables), dockable panel layout. |
-| `renderer/features/generation/` | Prompt/controls panel, mode & style pickers, queue view, results grid. |
+| `renderer/features/generation/` | Prompt/controls panel, mode & style pickers, queue view, results grid; inline Scene Graph **plan preview** (M13). |
 | `renderer/features/editor/` | Canvas-based pixel editor: tools (pencil/eraser/fill/line/rect/ellipse/select/move), layers, onion skinning, timeline, grid/zoom, tile preview. |
-| `renderer/features/palettes/` | Palette browser/editor, extraction, locking UI. |
+| `renderer/features/plan/` | Plan preview (M13, D-009/D-010): `POST /api/plan` → Scene Graph summary, silhouette grid, compiled prompt, agent trace. Pure `planView.ts` (tested). |
+| `renderer/features/qa/` | Pixel QA panel (M13, D-013): run detectors on a result/uploaded sprite, score bars + findings, apply safe repairs. Pure `qaView.ts` (tested). |
+| `renderer/features/characters/` | Character manager (M13, D-011): list/create, reference frames, cosine drift meter. |
+| `renderer/features/palettes/` | Palette browser/editor, extraction, locking UI; **Palette Lab** (M13, D-012): contrast/CVD/ramps/readability analysis. |
 | `renderer/features/projects/` | Project browser, autosave indicator. |
-| `renderer/api/` | Typed API client + WebSocket progress hook; types mirror backend pydantic models. |
-| `renderer/state/` | Zustand stores: generation, editor (with undo/redo history), palettes, projects. |
+| `renderer/api/` | Typed API client + WebSocket progress hook (agentic-layer endpoints added M13); image ↔ base64 helpers; types mirror backend pydantic models. |
+| `renderer/state/` | Zustand stores: generation, editor (with undo/redo history), characters (M13), palettes, projects. |
 
 Editor state uses an immutable-snapshot undo/redo stack; pixel data lives in typed arrays
 (`Uint8ClampedArray` per layer) rendered to `<canvas>` with nearest-neighbor scaling.

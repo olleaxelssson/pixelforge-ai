@@ -1,11 +1,22 @@
 import { useEffect, useState } from "react";
 
+import { CharactersPanel } from "../features/characters/CharactersPanel";
 import { EditorPanel } from "../features/editor/EditorPanel";
 import { GenerationPanel } from "../features/generation/GenerationPanel";
 import { ResultsPanel } from "../features/generation/ResultsPanel";
+import { PalettePanel } from "../features/palettes/PalettePanel";
+import { QAPanel } from "../features/qa/QAPanel";
 import { useGenerationStore } from "../state/generationStore";
 
-type View = "generate" | "editor";
+type View = "generate" | "editor" | "qa" | "characters" | "palettes";
+
+const VIEWS: { id: View; label: string }[] = [
+  { id: "generate", label: "Generate" },
+  { id: "editor", label: "Editor" },
+  { id: "qa", label: "QA" },
+  { id: "characters", label: "Characters" },
+  { id: "palettes", label: "Palette Lab" },
+];
 
 export function App() {
   const [view, setView] = useState<View>("generate");
@@ -26,15 +37,15 @@ export function App() {
       <header className="app-header">
         <span className="app-title">PixelForge AI</span>
         <nav className="app-nav">
-          <button
-            className={view === "generate" ? "active" : ""}
-            onClick={() => setView("generate")}
-          >
-            Generate
-          </button>
-          <button className={view === "editor" ? "active" : ""} onClick={() => setView("editor")}>
-            Editor
-          </button>
+          {VIEWS.map((v) => (
+            <button
+              key={v.id}
+              className={view === v.id ? "active" : ""}
+              onClick={() => setView(v.id)}
+            >
+              {v.label}
+            </button>
+          ))}
         </nav>
         <span className={`backend-status ${backendOnline ? "online" : "offline"}`}>
           {backendOnline
@@ -43,14 +54,16 @@ export function App() {
         </span>
       </header>
       <main className="app-main">
-        {view === "generate" ? (
+        {view === "generate" && (
           <div className="generate-layout">
             <GenerationPanel />
             <ResultsPanel />
           </div>
-        ) : (
-          <EditorPanel />
         )}
+        {view === "editor" && <EditorPanel />}
+        {view === "qa" && <QAPanel />}
+        {view === "characters" && <CharactersPanel />}
+        {view === "palettes" && <PalettePanel />}
       </main>
     </div>
   );

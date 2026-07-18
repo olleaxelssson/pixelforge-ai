@@ -77,6 +77,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/plugins/` — Plugin SDK (D-014): `loader.py` discovers `pixelforge.*` entry points + required `PluginManifest`, registers into existing registries; off by default (`plugins_enabled` + `plugin_allowlist`), exposed via `GET /api/plugins` and `pixelforge list plugins`. Guide: `docs/developer/plugins.md`; sample: `examples/plugins/pixelforge-hello`
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)
+- `frontend/src/renderer/features/{plan,qa,characters,palettes}/` — UI for the agentic layer (M13): plan preview, QA panel, character manager, palette lab; pure view helpers (`planView.ts`, `qaView.ts`) are unit-tested, React components are not (test env is node-only)
 - `frontend/src/shared/config.ts` — frontend configuration
 
 ## Conventions

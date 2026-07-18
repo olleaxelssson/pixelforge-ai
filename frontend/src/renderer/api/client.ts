@@ -1,10 +1,17 @@
 /** Typed HTTP client for the PixelForge backend. */
 import { API_BASE_URL, WS_BASE_URL } from "../../shared/config";
 import type {
+  Character,
+  CharacterIdentity,
+  DriftResult,
   GenerationMode,
   GenerationRequest,
   Job,
   Palette,
+  PaletteAnalysis,
+  PluginReport,
+  QAResponse,
+  SceneGraph,
   StylePreset,
   SystemInfo,
 } from "./types";
@@ -33,6 +40,40 @@ export const api = {
   job: (id: string) => request<Job>(`/api/jobs/${id}`),
   cancelJob: (id: string) => request<{ cancelled: boolean }>(`/api/jobs/${id}/cancel`, { method: "POST" }),
   imageUrl: (filename: string) => `${API_BASE_URL}/api/images/${filename}`,
+
+  // Agentic layer (M7–M12) surfaced in the UI (M13).
+  plan: (body: GenerationRequest) =>
+    request<SceneGraph>("/api/plan", { method: "POST", body: JSON.stringify(body) }),
+
+  qa: (body: {
+    image_base64: string;
+    max_colors?: number;
+    transparent_background?: boolean;
+    palette_id?: string | null;
+    lighting_direction?: string | null;
+    repair?: boolean;
+  }) => request<QAResponse>("/api/qa", { method: "POST", body: JSON.stringify(body) }),
+
+  paletteAnalysis: (paletteId: string) =>
+    request<PaletteAnalysis>(`/api/palettes/${paletteId}/analysis`),
+
+  characters: () => request<Character[]>("/api/characters"),
+  createCharacter: (body: { name: string; identity: CharacterIdentity; palette_id?: string | null }) =>
+    request<Character>("/api/characters", { method: "POST", body: JSON.stringify(body) }),
+  deleteCharacter: (id: string) =>
+    request<{ deleted: boolean }>(`/api/characters/${id}`, { method: "DELETE" }),
+  addCharacterFrame: (id: string, body: { image_base64: string; label?: string }) =>
+    request<Character>(`/api/characters/${id}/frames`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  characterDrift: (id: string, body: { image_base64: string }) =>
+    request<DriftResult>(`/api/characters/${id}/drift`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  plugins: () => request<PluginReport>("/api/plugins"),
 };
 
 /** Subscribe to job progress over WebSocket; returns an unsubscribe function. */
