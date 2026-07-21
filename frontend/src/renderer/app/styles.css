@@ -895,6 +895,47 @@ body {
   margin: 6px 0 0;
 }
 
+.anim-consistency {
+  margin-top: 8px;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+}
+
+.anim-consistency.ok {
+  background: rgba(76, 175, 125, 0.14);
+  color: var(--success);
+}
+
+.anim-consistency.warn {
+  background: rgba(228, 99, 42, 0.14);
+  color: var(--accent-hover);
+}
+
+.filmstrip-frame {
+  position: relative;
+}
+
+.frame-badge {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  font-size: 9px;
+  line-height: 1;
+  padding: 1px 3px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}
+
+.frame-badge.ok {
+  color: #7fe0ad;
+}
+
+.frame-badge.warn {
+  color: #ffb08a;
+}
+
 .anim-block {
   margin-bottom: 18px;
 }

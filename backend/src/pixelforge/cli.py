@@ -147,6 +147,14 @@ def _build_parser() -> argparse.ArgumentParser:
     anim.add_argument("--max-colors", type=int, default=16)
     anim.add_argument("--frame-ms", type=int, default=120, help="Frame duration (ms) for the GIF")
     anim.add_argument("--qa", action="store_true", help="Run QA on each frame")
+    anim.add_argument(
+        "--reference-chain",
+        action="store_true",
+        help="Feed each frame the previous one as a Stage-A reference (img2img)",
+    )
+    anim.add_argument(
+        "--consistency", action="store_true", help="Measure per-frame identity drift vs frame 1"
+    )
     anim.add_argument("-o", "--output-dir", default=".", help="Directory for frames/GIF/sheet")
 
     chr_parser = sub.add_parser("character", help="Manage stored characters (identity memory)")
@@ -385,6 +393,8 @@ def _cmd_animate(args: argparse.Namespace) -> int:
         pipeline=pipeline,
         outputs_dir=output_dir,
         qa_engine=QAEngine(pass_threshold=settings.qa_pass_threshold) if args.qa else None,
+        embeddings=get_embedding_backend(settings.memory_embedding_backend),
+        drift_threshold=settings.memory_drift_threshold,
     )
     request = AnimationRequest(
         prompt=args.prompt,
@@ -398,6 +408,8 @@ def _cmd_animate(args: argparse.Namespace) -> int:
         max_colors=args.max_colors,
         frame_duration_ms=args.frame_ms,
         run_qa=args.qa,
+        reference_chaining=args.reference_chain,
+        check_consistency=args.consistency,
     )
 
     def on_progress(stage: str, percent: float) -> None:

@@ -16,3 +16,17 @@ export function onionFrame(index: number, count: number, loop: boolean): number 
   if (index > 0) return index - 1;
   return loop && count > 1 ? count - 1 : null;
 }
+
+export interface ConsistencyBadge {
+  percent: number;
+  ok: boolean;
+}
+
+/** A per-frame identity-consistency badge: percentage + whether it clears the drift threshold. */
+export function consistencyBadge(
+  value: number | null,
+  threshold = 0.85,
+): ConsistencyBadge | null {
+  if (value === null) return null;
+  return { percent: Math.round(value * 100), ok: value >= threshold };
+}

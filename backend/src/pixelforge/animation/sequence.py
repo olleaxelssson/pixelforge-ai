@@ -14,6 +14,8 @@ sheet via :mod:`assembly`.
 
 from __future__ import annotations
 
+import base64
+import io
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +27,8 @@ from pixelforge.animation.assembly import build_sprite_sheet, save_gif
 from pixelforge.core.errors import UnknownRegistryKeyError
 from pixelforge.core.models import GenerationRequest
 from pixelforge.generation.pipeline import GenerationPipeline, ProgressCallback
+from pixelforge.memory.drift import cosine_similarity
+from pixelforge.memory.embeddings import EmbeddingBackend
 from pixelforge.palettes.model import hex_to_rgb, rgb_to_hex
 from pixelforge.qa.engine import QAEngine
 from pixelforge.qa.models import DetectorContext, QAScores
@@ -42,6 +46,12 @@ class AnimationRequest(BaseModel):
     max_colors: int = Field(default=16, ge=2, le=256)
     frame_duration_ms: int = Field(default=120, ge=20, le=2000)
     run_qa: bool = False
+    # M19: feed each frame the previous frame as a Stage-A reference (img2img) so poses evolve from
+    # a shared anchor. Ignored by the mock backend; consumed by a real img2img-capable backend.
+    reference_chaining: bool = False
+    reference_strength: float = Field(default=0.6, ge=0.0, le=1.0)
+    # M19: measure per-frame identity drift against frame 1 (reusing the D-011 embedding gate).
+    check_consistency: bool = False
 
 
 class AnimationFrame(BaseModel):
@@ -50,6 +60,7 @@ class AnimationFrame(BaseModel):
     seed: int
     description: str
     qa: QAScores | None = None
+    consistency: float | None = None  # cosine similarity to the anchor (frame 0); None if unchecked
 
 
 class AnimationResult(BaseModel):
@@ -61,6 +72,9 @@ class AnimationResult(BaseModel):
     frames: list[AnimationFrame] = Field(default_factory=list)
     gif_filename: str
     sheet_filename: str
+    mean_consistency: float | None = None
+    min_consistency: float | None = None
+    consistent: bool | None = None  # True when every frame stays above the drift threshold
 
 
 class AnimationSequence:
@@ -69,10 +83,14 @@ class AnimationSequence:
         pipeline: GenerationPipeline,
         outputs_dir: Path,
         qa_engine: QAEngine | None = None,
+        embeddings: EmbeddingBackend | None = None,
+        drift_threshold: float = 0.85,
     ) -> None:
         self._pipeline = pipeline
         self._outputs_dir = outputs_dir
         self._qa = qa_engine
+        self._embeddings = embeddings
+        self._drift_threshold = drift_threshold
 
     def generate(
         self, job_id: str, request: AnimationRequest, on_progress: ProgressCallback
@@ -85,9 +103,15 @@ class AnimationSequence:
         locked: list[str] | None = None
         frames: list[AnimationFrame] = []
         images: list[Image.Image] = []
+        anchor_embedding: list[float] | None = None
+        check_consistency = request.check_consistency and self._embeddings is not None
 
         for index, description in enumerate(action.frame_descriptions):
             on_progress(f"frame {index + 1}/{action.frame_count}", index / action.frame_count * 90)
+            # Reference chaining: evolve each frame from the previous (img2img on a real backend).
+            reference = None
+            if request.reference_chaining and images:
+                reference = _to_base64(images[-1])
             frame_request = GenerationRequest(
                 prompt=f"{request.prompt}, {description}",
                 mode=request.mode,
@@ -99,6 +123,8 @@ class AnimationSequence:
                 palette_id=request.palette_id,
                 max_colors=request.max_colors,
                 locked_palette_hex=locked,
+                reference_image_base64=reference,
+                reference_strength=request.reference_strength,
             )
             result = self._pipeline.run(f"{job_id}_f{index}", frame_request, lambda _s, _p: None)
             image_meta = result.images[0]
@@ -117,6 +143,15 @@ class AnimationSequence:
                 )
                 scores = self._qa.run(image, context).scores
 
+            consistency = None
+            if check_consistency and self._embeddings is not None:
+                embedding = self._embeddings.embed(image)
+                if anchor_embedding is None:
+                    anchor_embedding = embedding  # frame 0 is the identity anchor
+                    consistency = 1.0
+                else:
+                    consistency = round(cosine_similarity(embedding, anchor_embedding), 3)
+
             frames.append(
                 AnimationFrame(
                     index=index,
@@ -124,6 +159,7 @@ class AnimationSequence:
                     seed=image_meta.seed,
                     description=description,
                     qa=scores,
+                    consistency=consistency,
                 )
             )
 
@@ -136,6 +172,10 @@ class AnimationSequence:
         build_sprite_sheet(images).save(self._outputs_dir / sheet_name)
         on_progress("done", 100.0)
 
+        scored = [f.consistency for f in frames if f.consistency is not None]
+        mean_consistency = round(sum(scored) / len(scored), 3) if scored else None
+        min_consistency = round(min(scored), 3) if scored else None
+
         return AnimationResult(
             action=action.id,
             action_name=action.name,
@@ -145,7 +185,18 @@ class AnimationSequence:
             frames=frames,
             gif_filename=gif_name,
             sheet_filename=sheet_name,
+            mean_consistency=mean_consistency,
+            min_consistency=min_consistency,
+            consistent=(min_consistency >= self._drift_threshold)
+            if min_consistency is not None
+            else None,
         )
+
+
+def _to_base64(image: Image.Image) -> str:
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return base64.b64encode(buffer.getvalue()).decode()
 
 
 def _image_palette(image: Image.Image) -> list[str]:

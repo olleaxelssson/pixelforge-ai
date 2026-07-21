@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../api/client";
 import type { AnimationAction, AnimationResult } from "../../api/types";
 import { useGenerationStore } from "../../state/generationStore";
-import { nextFrame, onionFrame } from "./playback";
+import { consistencyBadge, nextFrame, onionFrame } from "./playback";
 
 const SIZES = [16, 24, 32, 48, 64];
 
@@ -18,6 +18,8 @@ export function AnimationPanel() {
   const [seed, setSeed] = useState<string>("7");
   const [paletteId, setPaletteId] = useState("");
   const [frameMs, setFrameMs] = useState(120);
+  const [refChain, setRefChain] = useState(false);
+  const [checkConsistency, setCheckConsistency] = useState(true);
 
   const [result, setResult] = useState<AnimationResult | null>(null);
   const [busy, setBusy] = useState(false);
@@ -57,6 +59,8 @@ export function AnimationPanel() {
         seed: seed === "" ? null : Number(seed),
         palette_id: paletteId || null,
         frame_duration_ms: frameMs,
+        reference_chaining: refChain,
+        check_consistency: checkConsistency,
       });
       setResult(animation);
       setFrame(0);
@@ -138,6 +142,25 @@ export function AnimationPanel() {
           />
         </div>
 
+        <div className="field">
+          <label>
+            <input
+              type="checkbox"
+              checked={checkConsistency}
+              onChange={(e) => setCheckConsistency(e.target.checked)}
+            />{" "}
+            Check per-frame consistency
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={refChain}
+              onChange={(e) => setRefChain(e.target.checked)}
+            />{" "}
+            Reference chaining (evolve each frame from the last; needs a real backend)
+          </label>
+        </div>
+
         <button
           className="primary-button"
           disabled={!backendOnline || !prompt.trim() || busy}
@@ -190,25 +213,42 @@ export function AnimationPanel() {
                 </span>
               </div>
               <p className="anim-desc">{current.description}</p>
+              {result.mean_consistency !== null && (
+                <div className={`anim-consistency ${result.consistent ? "ok" : "warn"}`}>
+                  identity consistency: mean {Math.round(result.mean_consistency * 100)}% · min{" "}
+                  {Math.round((result.min_consistency ?? 0) * 100)}%{" "}
+                  {result.consistent ? "(coherent)" : "(frames drift)"}
+                </div>
+              )}
             </div>
 
             <div className="anim-side">
               <div className="anim-block">
                 <h4>Timeline</h4>
                 <div className="filmstrip">
-                  {result.frames.map((f, i) => (
-                    <button
-                      key={f.filename}
-                      className={`filmstrip-frame ${i === frame ? "active" : ""}`}
-                      onClick={() => {
-                        setPlaying(false);
-                        setFrame(i);
-                      }}
-                      title={f.description}
-                    >
-                      <img src={api.imageUrl(f.filename)} alt={`frame ${i + 1}`} />
-                    </button>
-                  ))}
+                  {result.frames.map((f, i) => {
+                    const badge = consistencyBadge(f.consistency);
+                    return (
+                      <button
+                        key={f.filename}
+                        className={`filmstrip-frame ${i === frame ? "active" : ""}`}
+                        onClick={() => {
+                          setPlaying(false);
+                          setFrame(i);
+                        }}
+                        title={
+                          badge ? `${f.description} · consistency ${badge.percent}%` : f.description
+                        }
+                      >
+                        <img src={api.imageUrl(f.filename)} alt={`frame ${i + 1}`} />
+                        {badge && (
+                          <span className={`frame-badge ${badge.ok ? "ok" : "warn"}`}>
+                            {badge.percent}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
