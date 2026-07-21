@@ -113,6 +113,14 @@ def _build_parser() -> argparse.ArgumentParser:
     qac.add_argument("--palette", default=None, help="Locked palette id (see: list palettes)")
     qac.add_argument("--lighting", default=None, help="Intended light direction, e.g. top-left")
     qac.add_argument(
+        "--subject",
+        default=None,
+        help="Intended subject (enables the semantic critic if configured)",
+    )
+    qac.add_argument(
+        "--critic", default=None, choices=["heuristic", "vlm"], help="Override the QA critic"
+    )
+    qac.add_argument(
         "--opaque", action="store_true", help="Sprite is not on a transparent background"
     )
     qac.add_argument(
@@ -127,6 +135,19 @@ def _build_parser() -> argparse.ArgumentParser:
         "--max-iter", type=int, default=2, help="Max repair-loop iterations (with --repair-loop)"
     )
     qac.add_argument("-o", "--output", default=None, help="Output path for the repaired PNG")
+
+    anim = sub.add_parser("animate", help="Generate an animation frame sequence (GIF + sheet)")
+    anim.add_argument("prompt")
+    anim.add_argument("--action", default="idle", help="Action id (see: list actions)")
+    anim.add_argument("--mode", default="character")
+    anim.add_argument("--style", default="modern-indie")
+    anim.add_argument("--size", default="32", help="WIDTHxHEIGHT or a single number")
+    anim.add_argument("--seed", type=int, default=None)
+    anim.add_argument("--palette", default=None, help="Palette id to lock (see: list palettes)")
+    anim.add_argument("--max-colors", type=int, default=16)
+    anim.add_argument("--frame-ms", type=int, default=120, help="Frame duration (ms) for the GIF")
+    anim.add_argument("--qa", action="store_true", help="Run QA on each frame")
+    anim.add_argument("-o", "--output-dir", default=".", help="Directory for frames/GIF/sheet")
 
     chr_parser = sub.add_parser("character", help="Manage stored characters (identity memory)")
     chr_sub = chr_parser.add_subparsers(dest="character_command", required=True)
@@ -158,6 +179,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "backends",
             "planning-backends",
             "plugins",
+            "actions",
         ],
     )
 
@@ -307,8 +329,17 @@ def _cmd_qa(args: argparse.Namespace) -> int:
         transparent_background=not args.opaque,
         palette=palette,
         lighting_direction=args.lighting,
+        subject=args.subject,
     )
-    engine = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    critic_kind = args.critic or settings.qa_critic
+    if critic_kind == "vlm":
+        from pixelforge.qa.critic import VLMCritic
+        from pixelforge.qa.critic_backends.registry import get_critic_backend
+
+        critic = VLMCritic(get_critic_backend(settings.vlm_critic_backend))
+        engine = QAEngine(critic=critic, pass_threshold=settings.qa_pass_threshold)
+    else:
+        engine = QAEngine(pass_threshold=settings.qa_pass_threshold)
     if args.repair_loop:
         from pixelforge.qa.repair_loop import RepairLoop
 
@@ -327,6 +358,61 @@ def _cmd_qa(args: argparse.Namespace) -> int:
         payload = {"report": report.model_dump(), "output": args.output}
     else:
         payload = engine.run(image, context).model_dump()
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
+def _cmd_animate(args: argparse.Namespace) -> int:
+    from pixelforge.animation.sequence import AnimationRequest, AnimationSequence
+
+    settings = get_settings()
+    width, height = _parse_size(args.size)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    modes = ModeRegistry()
+    styles = StyleRegistry(user_dir=settings.user_styles_dir)
+    pipeline = GenerationPipeline(
+        backend_name=settings.backend,
+        outputs_dir=output_dir,
+        modes=modes,
+        styles=styles,
+        palettes=PaletteService(user_dir=settings.user_palettes_dir),
+        diffusion_resolution=settings.diffusion_resolution,
+        diffusion_steps=settings.diffusion_steps,
+    )
+    sequence = AnimationSequence(
+        pipeline=pipeline,
+        outputs_dir=output_dir,
+        qa_engine=QAEngine(pass_threshold=settings.qa_pass_threshold) if args.qa else None,
+    )
+    request = AnimationRequest(
+        prompt=args.prompt,
+        action=args.action,
+        mode=args.mode,
+        style=args.style,
+        width=width,
+        height=height,
+        seed=args.seed,
+        palette_id=args.palette,
+        max_colors=args.max_colors,
+        frame_duration_ms=args.frame_ms,
+        run_qa=args.qa,
+    )
+
+    def on_progress(stage: str, percent: float) -> None:
+        print(f"{stage} {percent:.0f}%", file=sys.stderr)
+
+    try:
+        result = sequence.generate("cli", request, on_progress)
+    except UnknownRegistryKeyError as exc:
+        print(json.dumps({"error": str(exc)}), file=sys.stderr)
+        return 2
+    payload = result.model_dump()
+    payload["gif_path"] = str(output_dir / result.gif_filename)
+    payload["sheet_path"] = str(output_dir / result.sheet_filename)
+    for frame, meta in zip(payload["frames"], result.frames, strict=True):
+        frame["path"] = str(output_dir / meta.filename)
     print(json.dumps(payload, indent=2))
     return 0
 
@@ -439,6 +525,10 @@ def _cmd_list(args: argparse.Namespace) -> int:
         payload = list_planning_backends()
     elif args.what == "plugins":
         payload = load_plugins(settings).model_dump(mode="json")
+    elif args.what == "actions":
+        from pixelforge.animation.actions import ANIMATION_ACTIONS
+
+        payload = [a.model_dump() for a in ANIMATION_ACTIONS]
     else:
         payload = list_backends()
     print(json.dumps(payload, indent=2))
@@ -469,6 +559,7 @@ def main(argv: list[str] | None = None) -> int:
         "palette": _cmd_palette,
         "qa": _cmd_qa,
         "benchmark": _cmd_benchmark,
+        "animate": _cmd_animate,
         "character": _cmd_character,
         "export": _cmd_export,
         "list": _cmd_list,

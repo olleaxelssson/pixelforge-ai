@@ -9,6 +9,7 @@ from fastapi import Request
 
 from pixelforge.agents.planning_backends.registry import get_planning_backend
 from pixelforge.agents.runtime import PlanningRuntime
+from pixelforge.animation.sequence import AnimationSequence
 from pixelforge.config import Settings, get_settings
 from pixelforge.core.errors import JobCancelledError
 from pixelforge.core.models import GenerationResult, Job
@@ -22,6 +23,8 @@ from pixelforge.palettes.service import PaletteService
 from pixelforge.plugins.loader import load_plugins
 from pixelforge.plugins.manifest import PluginReport
 from pixelforge.projects.store import ProjectStore
+from pixelforge.qa.critic import HeuristicCritic, VLMCritic
+from pixelforge.qa.critic_backends.registry import get_critic_backend
 from pixelforge.qa.engine import QAEngine
 from pixelforge.qa.repair_loop import RepairLoop
 from pixelforge.styles.registry import StyleRegistry
@@ -39,6 +42,7 @@ class AppState:
     planner: PlanningRuntime | None
     qa: QAEngine
     characters: CharacterMemory
+    animation: AnimationSequence
     plugins: PluginReport
 
 
@@ -57,7 +61,12 @@ def build_app_state() -> AppState:
         if settings.planning_enabled
         else None
     )
-    qa = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    critic = (
+        VLMCritic(get_critic_backend(settings.vlm_critic_backend))
+        if settings.qa_critic == "vlm"
+        else HeuristicCritic()
+    )
+    qa = QAEngine(critic=critic, pass_threshold=settings.qa_pass_threshold)
     repair_loop = (
         RepairLoop(engine=qa, max_iterations=settings.qa_repair_max_iterations)
         if (settings.qa_enabled and settings.qa_repair_loop)
@@ -79,6 +88,11 @@ def build_app_state() -> AppState:
         planner=planner,
         qa_engine=qa if (settings.qa_enabled and settings.qa_autorepair) else None,
         repair_loop=repair_loop,
+    )
+    animation = AnimationSequence(
+        pipeline=pipeline,
+        outputs_dir=settings.outputs_dir,
+        qa_engine=qa if settings.qa_enabled else None,
     )
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:
@@ -104,6 +118,7 @@ def build_app_state() -> AppState:
         planner=planner,
         qa=qa,
         characters=characters,
+        animation=animation,
         plugins=plugins,
     )
 

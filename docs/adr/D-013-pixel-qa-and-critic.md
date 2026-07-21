@@ -4,7 +4,8 @@
   `HeuristicCritic`, `QAEngine`, opt-in pipeline hook, API + CLI. Layer 2 (M15): the QA-gated
   **repair loop** (`qa/repair_loop.py`) — critique → regenerate only the failing regions, bounded
   and monotonic, via a swappable `RegionRegenerator` (deterministic inpaint + real-backend img2img).
-  A VLM-backed `Critic` (the same interface) remains the one later piece.
+  Semantic critic (M17): `VLMCritic` over a swappable `critic_backends/` (deterministic mock +
+  gated real VLM) adds subject-match/appeal judgment to the score and feeds the repair loop.
 - **Date:** 2026-07-16
 - **Deciders:** Agentic architecture review (Claude Code)
 - **Related:** extends `pixelize/cleanup.py`; consumes D-009 (writes findings into the Scene Graph),

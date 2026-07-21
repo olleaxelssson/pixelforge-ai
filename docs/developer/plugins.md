@@ -27,6 +27,7 @@ pixelforge export sprite.png --format ascii -o out/   # the plugin's exporter, l
 | `pixelforge.generation_backends` | `pixelforge.generation.backends.base.GenerationBackend` | Stage-A backend registry |
 | `pixelforge.planning_backends` | `pixelforge.agents.planning_backends.base.PlanningBackend` | planning-backend registry |
 | `pixelforge.embedding_backends` | `pixelforge.memory.embeddings.EmbeddingBackend` | identity-embedding registry |
+| `pixelforge.critic_backends` | `pixelforge.qa.critic_backends.base.CriticBackend` | semantic-critic registry (`qa_critic=vlm`) |
 
 An entry point may resolve to an **instance**, a **class**, or a **zero-argument factory**; the
 loader normalizes all three and type-checks the result against the group's interface. Future groups

@@ -36,8 +36,9 @@ cd backend
 .venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
 .venv/bin/pixelforge qa sprite.png --repair -o fixed.png  # detect defects; --repair applies safe fixes
 .venv/bin/pixelforge character create "Elias" --subject "Captain Elias, veteran knight"  # then: add-frame, drift, list
+.venv/bin/pixelforge animate "a knight" --action walk --seed 7 -o /tmp/anim  # seed-anchored, palette-locked frames + GIF + sheet
 .venv/bin/pixelforge generate "winter armor" --character <id>   # generate AS a stored character
-.venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends, plugins
+.venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends, plugins, actions
 .venv/bin/pixelforge benchmark --backend mock   # time + QA-score a fixed suite (speed/quality/VRAM)
 .venv/bin/pixelforge system              # device / backend availability
 ```
@@ -73,9 +74,10 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/generation/benchmark.py` — benchmark suite (M2): times + QA-scores generations; `pixelforge benchmark`. Golden-image regression in `backend/tests/golden/` (`PIXELFORGE_UPDATE_GOLDEN=1` to refresh)
 - `backend/src/pixelforge/core/scene_graph.py` — the `SceneGraph` (D-009): structured, typed plan for one generation
 - `backend/src/pixelforge/agents/` — agentic planning layer (D-010): seven agents (`intent`, `art-director`, `composition`, `silhouette`, `lighting`, `material`, `animation`), `PlanningRuntime`, swappable `planning_backends/` (deterministic `mock`); off by default (`planning_enabled`), compiled by `generation/plan_compiler.py` (incl. silhouette control map + provenance sidecar)
-- `backend/src/pixelforge/qa/` — Pixel QA engine (D-013): deterministic `detectors/` + safe repairs, `HeuristicCritic`, `QAEngine`; Layer 2 `repair_loop.py` (QA-gated region-repair loop, swappable `RegionRegenerator`); off by default (`qa_enabled`, `qa_repair_loop`), exposed via `POST /api/qa` and `pixelforge qa [--repair-loop]`
+- `backend/src/pixelforge/qa/` — Pixel QA engine (D-013): deterministic `detectors/` + safe repairs, `HeuristicCritic`, `QAEngine`; Layer 2 `repair_loop.py` (QA-gated region-repair loop, swappable `RegionRegenerator`); semantic `VLMCritic` over swappable `critic_backends/` (mock + gated VLM); off by default (`qa_enabled`, `qa_repair_loop`, `qa_critic`), exposed via `POST /api/qa` and `pixelforge qa [--repair-loop] [--critic vlm --subject ...]`
 - `backend/src/pixelforge/memory/` — character memory (D-011): `Character` store + reference frames + identity embeddings (mock backend), drift gate; opt-in per request via `character_id`, exposed via `/api/characters` and `pixelforge character`
-- `backend/src/pixelforge/palettes/`, `styles/`, `modes/`, `exporters/`, `animation/` — data-driven registries; extend by adding entries, not by editing consumers
+- `backend/src/pixelforge/palettes/`, `styles/`, `modes/`, `exporters/` — data-driven registries; extend by adding entries, not by editing consumers
+- `backend/src/pixelforge/animation/` — animation (D-009, M18): `actions.py` (13 templates), `sequence.py` (`AnimationSequence`: seed-anchored + palette-locked frames + per-frame QA), `assembly.py` (GIF + sprite sheet); `POST /api/animation/generate`, `pixelforge animate`
 - `backend/src/pixelforge/plugins/` — Plugin SDK (D-014): `loader.py` discovers `pixelforge.*` entry points + required `PluginManifest`, registers into existing registries; off by default (`plugins_enabled` + `plugin_allowlist`), exposed via `GET /api/plugins` and `pixelforge list plugins`. Guide: `docs/developer/plugins.md`; sample: `examples/plugins/pixelforge-hello`
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)

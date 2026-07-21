@@ -34,7 +34,7 @@ from pixelforge.generation.plan_compiler import (
 )
 from pixelforge.generation.prompt_builder import build_negative_prompt, build_prompt
 from pixelforge.modes.registry import ModeRegistry
-from pixelforge.palettes.model import rgb_to_hex
+from pixelforge.palettes.model import hex_to_rgb, rgb_to_hex
 from pixelforge.palettes.quantize import apply_palette, extract_palette
 from pixelforge.palettes.service import PaletteService
 from pixelforge.pixelize import binarize_alpha, pixelize, remove_orphan_pixels
@@ -120,6 +120,8 @@ class GenerationPipeline:
             on_progress("palette", base + 15.0 / len(raw_images))
             if request.palette_id:
                 colors = self._palettes.get(request.palette_id).as_rgb()
+            elif request.locked_palette_hex:
+                colors = [hex_to_rgb(h) for h in request.locked_palette_hex]
             else:
                 max_colors = style.default_max_colors or request.max_colors
                 colors = extract_palette(sprite, min(request.max_colors, max_colors))
@@ -140,6 +142,7 @@ class GenerationPipeline:
                     transparent_background=request.transparent_background,
                     palette=colors if request.palette_id else None,
                     lighting_direction=request.lighting_direction,
+                    subject=request.prompt,
                 )
                 if self._qa is not None:
                     sprite, _ = self._qa.repair(sprite, context)

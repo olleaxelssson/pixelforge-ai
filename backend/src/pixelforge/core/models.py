@@ -42,6 +42,9 @@ class GenerationRequest(BaseModel):
     # Character memory (D-011): generate as this stored character; the API/CLI applies the
     # character's identity (prompt, palette lock, reference frame) before the pipeline runs.
     character_id: str | None = None
+    # Animation (M3/M18): lock these exact colors instead of extracting — how a frame sequence
+    # keeps one palette across frames. Takes priority over extraction, below an explicit palette_id.
+    locked_palette_hex: list[str] | None = None
 
 
 class GeneratedImage(BaseModel):

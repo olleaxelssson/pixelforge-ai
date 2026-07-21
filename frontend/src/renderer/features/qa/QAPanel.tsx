@@ -35,6 +35,7 @@ export function QAPanel() {
   const [maxColors, setMaxColors] = useState(16);
   const [paletteId, setPaletteId] = useState<string>("");
   const [lighting, setLighting] = useState<string>("");
+  const [subject, setSubject] = useState<string>("");
 
   const results = useMemo(() => recentResults(jobs, jobOrder), [jobs, jobOrder]);
   const characterFrames = useMemo(
@@ -81,6 +82,7 @@ export function QAPanel() {
         max_colors: maxColors,
         palette_id: paletteId || null,
         lighting_direction: lighting || null,
+        subject: subject || null,
         repair: mode === "repair",
         repair_loop: mode === "loop",
       });
@@ -187,6 +189,15 @@ export function QAPanel() {
           </select>
         </div>
 
+        <div className="field">
+          <label>Intended subject (enables the semantic critic)</label>
+          <input
+            value={subject}
+            placeholder="a knight with a flaming sword"
+            onChange={(e) => setSubject(e.target.value)}
+          />
+        </div>
+
         <div className="button-row">
           <button
             className="primary-button"
@@ -278,6 +289,46 @@ export function QAPanel() {
                 </span>
               )}
             </div>
+
+            {report.critique && (
+              <div className="critique">
+                <div className="critique-head">
+                  <span className="critique-title">Critic ({report.critique.backend})</span>
+                  <span className="critique-verdict">{report.critique.verdict}</span>
+                </div>
+                <div className="critique-meters">
+                  <div className="critique-meter">
+                    <span className="score-label">Subject match</span>
+                    <div className="score-track">
+                      <div
+                        className="score-fill semantic"
+                        style={{ width: `${scorePercent(report.critique.subject_match)}%` }}
+                      />
+                    </div>
+                    <span className="score-value">
+                      {scorePercent(report.critique.subject_match)}%
+                    </span>
+                  </div>
+                  <div className="critique-meter">
+                    <span className="score-label">Appeal</span>
+                    <div className="score-track">
+                      <div
+                        className="score-fill semantic"
+                        style={{ width: `${scorePercent(report.critique.appeal)}%` }}
+                      />
+                    </div>
+                    <span className="score-value">{scorePercent(report.critique.appeal)}%</span>
+                  </div>
+                </div>
+                {report.critique.notes.length > 0 && (
+                  <ul className="critique-notes">
+                    {report.critique.notes.map((note, i) => (
+                      <li key={i}>{note}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             <div className="score-bars">
               {scoreBars(report.scores).map((bar) => (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { AnimationPanel } from "../features/animation/AnimationPanel";
 import { CharactersPanel } from "../features/characters/CharactersPanel";
 import { EditorPanel } from "../features/editor/EditorPanel";
 import { GenerationPanel } from "../features/generation/GenerationPanel";
@@ -8,11 +9,12 @@ import { PalettePanel } from "../features/palettes/PalettePanel";
 import { QAPanel } from "../features/qa/QAPanel";
 import { useGenerationStore } from "../state/generationStore";
 
-type View = "generate" | "editor" | "qa" | "characters" | "palettes";
+type View = "generate" | "editor" | "animation" | "qa" | "characters" | "palettes";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "generate", label: "Generate" },
   { id: "editor", label: "Editor" },
+  { id: "animation", label: "Animation" },
   { id: "qa", label: "QA" },
   { id: "characters", label: "Characters" },
   { id: "palettes", label: "Palette Lab" },
@@ -61,6 +63,7 @@ export function App() {
           </div>
         )}
         {view === "editor" && <EditorPanel />}
+        {view === "animation" && <AnimationPanel />}
         {view === "qa" && <QAPanel />}
         {view === "characters" && <CharactersPanel />}
         {view === "palettes" && <PalettePanel />}

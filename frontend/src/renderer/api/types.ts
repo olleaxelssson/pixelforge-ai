@@ -176,12 +176,22 @@ export interface QAScores {
   overall: number;
 }
 
+export interface Critique {
+  backend: string;
+  subject: string | null;
+  subject_match: number;
+  appeal: number;
+  verdict: string;
+  notes: string[];
+}
+
 export interface QAReport {
   width: number;
   height: number;
   passed: boolean;
   scores: QAScores;
   findings: Finding[];
+  critique: Critique | null;
 }
 
 export interface RepairAttempt {
@@ -244,6 +254,35 @@ export interface PaletteAnalysis {
   cvd: CvdReport[];
   readability_score: number;
   suggestions: Suggestion[];
+}
+
+// --- Animation (M3/M18) ---
+
+export interface AnimationAction {
+  id: string;
+  name: string;
+  frame_count: number;
+  frame_descriptions: string[];
+  loop: boolean;
+}
+
+export interface AnimationFrame {
+  index: number;
+  filename: string;
+  seed: number;
+  description: string;
+  qa: QAScores | null;
+}
+
+export interface AnimationResult {
+  action: string;
+  action_name: string;
+  loop: boolean;
+  frame_duration_ms: number;
+  palette_hex: string[];
+  frames: AnimationFrame[];
+  gif_filename: string;
+  sheet_filename: string;
 }
 
 // --- Character memory (D-011) ---

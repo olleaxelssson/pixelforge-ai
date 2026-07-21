@@ -23,7 +23,10 @@ from pixelforge.memory import embeddings as embeddings_module
 from pixelforge.plugins.loader import DiscoveredEntry, load_plugins, reset_plugin_state
 from pixelforge.plugins.manifest import PluginManifest
 from pixelforge.qa import registry as qa_registry
-from pixelforge.qa.models import DetectorContext
+from pixelforge.qa.critic_backends import registry as critic_registry
+from pixelforge.qa.critic_backends.base import CriticBackend
+from pixelforge.qa.critic_backends.registry import get_critic_backend
+from pixelforge.qa.models import Critique, DetectorContext
 
 _SAMPLE_SRC = Path(__file__).parents[2] / "examples" / "plugins" / "pixelforge-hello" / "src"
 
@@ -32,12 +35,14 @@ _SAMPLE_SRC = Path(__file__).parents[2] / "examples" / "plugins" / "pixelforge-h
 def _isolated_registries():
     """Snapshot every plugin-mutable registry and the loader cache; restore after each test."""
     exporters_registry._ensure_registered()
+    critic_registry._ensure_registered()
     snapshots = (
         dict(exporters_registry._EXPORTERS),
         list(agents_registry._PLUGIN_AGENTS),
         list(qa_registry._PLUGIN_DETECTORS),
         dict(planning_registry._BACKENDS),
         dict(embeddings_module._BACKENDS),
+        dict(critic_registry._BACKENDS),
     )
     reset_plugin_state()
     yield
@@ -49,6 +54,8 @@ def _isolated_registries():
     planning_registry._BACKENDS.update(snapshots[3])
     embeddings_module._BACKENDS.clear()
     embeddings_module._BACKENDS.update(snapshots[4])
+    critic_registry._BACKENDS.clear()
+    critic_registry._BACKENDS.update(snapshots[5])
     reset_plugin_state()
 
 
@@ -103,6 +110,31 @@ def test_allowlisted_plugin_registers_components() -> None:
     assert [p.name for p in report.loaded] == ["demo-plugin"]
     assert report.loaded[0].components == ["pixelforge.exporters:txt"]
     assert exporters_registry.get_exporter("plugin-txt").display_name == "Plugin TXT"
+
+
+class _PluginCriticBackend(CriticBackend):
+    name = "plugin-critic"
+
+    def assess(self, rgba, context) -> Critique:  # noqa: ANN001
+        return Critique(backend=self.name, subject_match=0.9, appeal=0.9, verdict="great")
+
+
+def test_plugin_registers_a_critic_backend() -> None:
+    entries = _entries(
+        extra=[
+            DiscoveredEntry(
+                "demo-plugin",
+                "0.1.0",
+                "pixelforge.critic_backends",
+                "critic",
+                lambda: _PluginCriticBackend,
+            )
+        ]
+    )
+    settings = _settings(plugins_enabled=True, plugin_allowlist=["demo-plugin"])
+    report = load_plugins(settings, discover=lambda: entries)
+    assert "pixelforge.critic_backends:critic" in report.loaded[0].components
+    assert get_critic_backend("plugin-critic").name == "plugin-critic"
 
 
 # --- validation & isolation -------------------------------------------------

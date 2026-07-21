@@ -32,7 +32,7 @@ class QAEngine:
         findings: list[Finding] = []
         for detector in self._detectors.list():
             findings.extend(detector.detect(rgba, context))
-        scores = self._critic.score(rgba, context, findings)
+        scores, critique = self._critic.evaluate(rgba, context, findings)
         has_error = any(f.severity is FindingSeverity.ERROR for f in findings)
         height, width = rgba.shape[:2]
         return QAReport(
@@ -41,6 +41,7 @@ class QAEngine:
             passed=scores.overall >= self._pass_threshold and not has_error,
             scores=scores,
             findings=findings,
+            critique=critique,
         )
 
     def repair(self, image: Image.Image, context: DetectorContext) -> tuple[Image.Image, QAReport]:

@@ -19,9 +19,10 @@
 - (Real-GPU-only pieces of M16 — actual FLUX inference, VRAM numbers — need weights + a GPU)
 
 ## M3 — Animation
-- 13 action templates, seed-anchored frame batches, palette-locked sequences
-- Onion skinning + timeline polish, GIF/sprite-sheet preview and export presets
-- Reference-frame conditioning for cross-frame consistency
+- ✅ (M18) 13 action templates → seed-anchored, palette-locked frame sequences; GIF + sprite-sheet
+- ✅ (M18) Onion-skin + timeline preview in the UI; per-frame QA
+- Reference-frame conditioning for cross-frame consistency (needs a real backend; hook is in place)
+- Export presets polish
 
 ## M4 — Training pipeline & dataset tools
 - Dataset import, validation, duplicate detection (perceptual hash), corrupt-file detection
@@ -156,3 +157,32 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   asserted; reports device + peak VRAM when a GPU is present. Runs in CI against the mock.
 - Needs real hardware to finish: actual FLUX inference, fp8/offload/VRAM numbers, ControlNet output
   quality. The code paths are in place and gated; only execution-on-GPU remains.
+
+### M17 — Semantic critic for QA (D-013) ✅ (mock-verifiable parts)
+- Completes the "critique" side with real *judgment*: does the sprite **read as** the intended
+  subject, and is it appealing — beyond the pixel heuristics.
+- `qa/critic_backends/` (swappable, mirrors the generation backends): deterministic
+  `MockCriticBackend` (runs in CI; `appeal` is a real palette-readability signal, `subject_match` a
+  deterministic subject+image proxy) and a **gated** `VLMCriticBackend` (transformers/torch, prompts
+  a vision-language model for a JSON assessment; defensively parsed). Chosen via a registry.
+- `VLMCritic` implements the existing `Critic` interface (new `Critic.evaluate()` returns scores +
+  an optional `Critique`), reuses `HeuristicCritic` for the pixel axes, and **folds subject-match/
+  appeal into `overall`** — so the M15 repair loop (accepts only on a higher overall) optimizes for
+  "reads as the subject" too.
+- Opt-in via `qa_critic=vlm` (+ `vlm_critic_backend`); `subject` threaded through the pipeline,
+  `POST /api/qa`, and `pixelforge qa --subject --critic vlm`. Surfaced in the QA tab as a critique
+  block (verdict + subject-match/appeal meters + notes). New `pixelforge.critic_backends` plugin group.
+- Later: run a real VLM (needs the `[ml]` extra + a model + a GPU); the path is in place and gated.
+
+### M18 — Animation: seed-anchored, palette-locked frame sequences (M3, D-009) ✅
+- Turns an action (13 templates in `animation/actions.py`) into a real multi-frame sprite sequence
+  via `animation/sequence.py` (`AnimationSequence`), reusing the generation pipeline per frame.
+- **Seed anchoring** — every frame shares one seed; only the per-frame action description changes.
+  **Palette lock** — frame 1's palette is reused for all later frames (new
+  `GenerationRequest.locked_palette_hex`, reusing the D-012/M8 lock), so colors never drift.
+- Each frame optionally runs through the QA engine (D-013); frames assemble into a looping **GIF**
+  and a **sprite sheet** (`animation/assembly.py`).
+- `POST /api/animation/generate` + `GET /api/animation/actions`; `pixelforge animate` + `list actions`.
+- **Animation tab** in the UI: action picker, frame-duration slider, an animated stage with
+  **play/pause** + **onion-skin**, a clickable timeline, the locked palette, and GIF/sheet downloads.
+- Pure `playback.ts` (nextFrame/onionFrame) unit-tested; browser E2E of the whole tab.

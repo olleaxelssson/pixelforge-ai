@@ -1,6 +1,8 @@
 /** Typed HTTP client for the PixelForge backend. */
 import { API_BASE_URL, WS_BASE_URL } from "../../shared/config";
 import type {
+  AnimationAction,
+  AnimationResult,
   Character,
   CharacterIdentity,
   DriftResult,
@@ -51,6 +53,7 @@ export const api = {
     transparent_background?: boolean;
     palette_id?: string | null;
     lighting_direction?: string | null;
+    subject?: string | null;
     repair?: boolean;
     repair_loop?: boolean;
     max_iterations?: number;
@@ -76,6 +79,24 @@ export const api = {
     }),
 
   plugins: () => request<PluginReport>("/api/plugins"),
+
+  animationActions: () => request<AnimationAction[]>("/api/animation/actions"),
+  animate: (body: {
+    prompt: string;
+    action: string;
+    mode?: string;
+    width?: number;
+    height?: number;
+    seed?: number | null;
+    palette_id?: string | null;
+    max_colors?: number;
+    frame_duration_ms?: number;
+    run_qa?: boolean;
+  }) =>
+    request<AnimationResult>("/api/animation/generate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 
 /** Subscribe to job progress over WebSocket; returns an unsubscribe function. */
