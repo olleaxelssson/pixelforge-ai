@@ -272,6 +272,7 @@ export interface AnimationFrame {
   seed: number;
   description: string;
   qa: QAScores | null;
+  consistency: number | null;
 }
 
 export interface AnimationResult {
@@ -283,6 +284,9 @@ export interface AnimationResult {
   frames: AnimationFrame[];
   gif_filename: string;
   sheet_filename: string;
+  mean_consistency: number | null;
+  min_consistency: number | null;
+  consistent: boolean | null;
 }
 
 // --- Character memory (D-011) ---

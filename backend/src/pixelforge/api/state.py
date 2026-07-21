@@ -93,6 +93,8 @@ def build_app_state() -> AppState:
         pipeline=pipeline,
         outputs_dir=settings.outputs_dir,
         qa_engine=qa if settings.qa_enabled else None,
+        embeddings=get_embedding_backend(settings.memory_embedding_backend),
+        drift_threshold=settings.memory_drift_threshold,
     )
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:

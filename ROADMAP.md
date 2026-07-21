@@ -21,7 +21,8 @@
 ## M3 — Animation
 - ✅ (M18) 13 action templates → seed-anchored, palette-locked frame sequences; GIF + sprite-sheet
 - ✅ (M18) Onion-skin + timeline preview in the UI; per-frame QA
-- Reference-frame conditioning for cross-frame consistency (needs a real backend; hook is in place)
+- ✅ (M19) Reference-frame chaining (each frame img2img's from the previous; gated to real backends)
+  + per-frame identity-consistency measurement (reuses the D-011 embedding gate), surfaced in the UI
 - Export presets polish
 
 ## M4 — Training pipeline & dataset tools
@@ -186,3 +187,16 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
 - **Animation tab** in the UI: action picker, frame-duration slider, an animated stage with
   **play/pause** + **onion-skin**, a clickable timeline, the locked palette, and GIF/sheet downloads.
 - Pure `playback.ts` (nextFrame/onionFrame) unit-tested; browser E2E of the whole tab.
+
+### M19 — Cross-frame consistency: reference chaining + drift measurement (M3 finish, D-009×D-011) ✅
+- **Reference chaining** (`AnimationRequest.reference_chaining`): each frame is fed the *previous*
+  frame as a Stage-A reference (`GenerationRequest.reference_image_base64` → `DiffusionSpec`), so a
+  real img2img backend evolves poses from a shared anchor. No-op on the mock (it ignores references),
+  so seed-anchoring + palette-lock are unchanged — verified with a spy backend.
+- **Per-frame identity consistency** (`check_consistency`): embeds each frame (reusing the D-011/M10
+  `EmbeddingBackend`), measures cosine similarity to frame 1 (the anchor), and flags frames below the
+  drift threshold — fully deterministic on the mock. `mean/min_consistency` + a `consistent` verdict.
+- `pixelforge animate --reference-chain --consistency`; the Animation tab gains both toggles, a
+  per-frame consistency badge on the timeline, and a mean/min consistency line. Pure
+  `consistencyBadge` unit-tested; browser E2E confirmed the readout.
+- Later: run a real img2img backend so reference chaining actually raises the consistency numbers.

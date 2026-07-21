@@ -92,6 +92,8 @@ export const api = {
     max_colors?: number;
     frame_duration_ms?: number;
     run_qa?: boolean;
+    reference_chaining?: boolean;
+    check_consistency?: boolean;
   }) =>
     request<AnimationResult>("/api/animation/generate", {
       method: "POST",

@@ -1,4 +1,5 @@
-"""Animation sequence tests (M3/M18): palette lock, seed anchoring, assembly, API, CLI."""
+"""Animation sequence tests (M3/M18/M19): palette lock, seed anchoring, assembly, reference
+chaining, per-frame consistency, API, CLI."""
 
 from __future__ import annotations
 
@@ -11,7 +12,10 @@ from PIL import Image
 from pixelforge.animation.sequence import AnimationRequest, AnimationSequence
 from pixelforge.cli import main
 from pixelforge.core.errors import UnknownRegistryKeyError
+from pixelforge.generation.backends.base import DiffusionSpec, GenerationBackend, ProgressFn
+from pixelforge.generation.backends.registry import _BACKENDS
 from pixelforge.generation.pipeline import GenerationPipeline
+from pixelforge.memory.embeddings import MockEmbeddingBackend
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.model import rgb_to_hex
 from pixelforge.palettes.service import PaletteService
@@ -140,3 +144,114 @@ def test_cli_list_actions(capsys) -> None:
     assert main(["list", "actions"]) == 0
     actions = json.loads(capsys.readouterr().out)
     assert any(a["id"] == "walk" and a["frame_count"] == 6 for a in actions)
+
+
+# --- M19: reference chaining + per-frame consistency ------------------------
+
+
+class _SpyBackend(GenerationBackend):
+    """Records whether each generate() call carried a reference image (img2img)."""
+
+    name = "spy-ref"
+
+    def __init__(self) -> None:
+        self.references: list[bool] = []
+
+    def is_available(self) -> bool:
+        return True
+
+    def generate(self, spec: DiffusionSpec, on_progress: ProgressFn) -> list[Image.Image]:
+        self.references.append(spec.reference_image is not None)
+        on_progress(1.0)
+        return [Image.new("RGBA", (spec.resolution, spec.resolution), (100, 120, 180, 255))]
+
+
+def _spy_sequence(outputs_dir: Path, spy: _SpyBackend) -> AnimationSequence:
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    _BACKENDS[spy.name] = spy
+    pipeline = GenerationPipeline(
+        backend_name=spy.name,
+        outputs_dir=outputs_dir,
+        modes=ModeRegistry(),
+        styles=StyleRegistry(),
+        palettes=PaletteService(user_dir=outputs_dir / "palettes"),
+    )
+    return AnimationSequence(pipeline, outputs_dir, embeddings=MockEmbeddingBackend())
+
+
+def test_reference_chaining_feeds_previous_frame(tmp_path) -> None:
+    spy = _SpyBackend()
+    try:
+        _spy_sequence(tmp_path, spy).generate(
+            "t", _request(action="idle", reference_chaining=True), lambda _s, _p: None
+        )
+    finally:
+        _BACKENDS.pop(spy.name, None)
+    # Frame 1 has no reference; every later frame is chained off the previous one.
+    assert spy.references == [False, True, True, True]
+
+
+def test_reference_chaining_off_by_default(tmp_path) -> None:
+    spy = _SpyBackend()
+    try:
+        _spy_sequence(tmp_path, spy).generate("t", _request(action="idle"), lambda _s, _p: None)
+    finally:
+        _BACKENDS.pop(spy.name, None)
+    assert spy.references == [False, False, False, False]
+
+
+def _consistency_sequence(outputs_dir: Path, threshold: float = 0.85) -> AnimationSequence:
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+    pipeline = GenerationPipeline(
+        backend_name="mock",
+        outputs_dir=outputs_dir,
+        modes=ModeRegistry(),
+        styles=StyleRegistry(),
+        palettes=PaletteService(user_dir=outputs_dir / "palettes"),
+    )
+    return AnimationSequence(
+        pipeline, outputs_dir, embeddings=MockEmbeddingBackend(), drift_threshold=threshold
+    )
+
+
+def test_consistency_measured_per_frame(tmp_path) -> None:
+    result = _consistency_sequence(tmp_path).generate(
+        "t", _request(action="walk", check_consistency=True), lambda _s, _p: None
+    )
+    assert result.frames[0].consistency == 1.0  # frame 0 is the anchor
+    assert all(-1.0 <= f.consistency <= 1.0 for f in result.frames)
+    assert result.mean_consistency is not None and result.min_consistency is not None
+
+
+def test_consistency_threshold_flags_drift(tmp_path) -> None:
+    # A permissive threshold passes; a near-perfect one fails (mock frames genuinely differ).
+    lenient = _consistency_sequence(tmp_path / "a", threshold=0.0).generate(
+        "t", _request(action="idle", check_consistency=True), lambda _s, _p: None
+    )
+    strict = _consistency_sequence(tmp_path / "b", threshold=0.999).generate(
+        "t", _request(action="idle", check_consistency=True), lambda _s, _p: None
+    )
+    assert lenient.consistent is True
+    assert strict.consistent is False
+
+
+def test_consistency_absent_when_not_requested(tmp_path) -> None:
+    result = _consistency_sequence(tmp_path).generate(
+        "t", _request(action="idle"), lambda _s, _p: None
+    )
+    assert result.mean_consistency is None
+    assert all(f.consistency is None for f in result.frames)
+
+
+def test_reference_chaining_does_not_change_mock_output(tmp_path) -> None:
+    # The mock ignores reference images, so chaining must not alter frames (palette lock intact).
+    plain = _consistency_sequence(tmp_path / "p").generate(
+        "t", _request(action="idle"), lambda _s, _p: None
+    )
+    chained = _consistency_sequence(tmp_path / "c").generate(
+        "t", _request(action="idle", reference_chaining=True), lambda _s, _p: None
+    )
+    for fp, fc in zip(plain.frames, chained.frames, strict=True):
+        a = np.asarray(Image.open(tmp_path / "p" / fp.filename).convert("RGBA"))
+        b = np.asarray(Image.open(tmp_path / "c" / fc.filename).convert("RGBA"))
+        assert np.array_equal(a, b)

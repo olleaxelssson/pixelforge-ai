@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { nextFrame, onionFrame } from "./playback";
+import { consistencyBadge, nextFrame, onionFrame } from "./playback";
 
 describe("nextFrame", () => {
   it("advances through frames", () => {
@@ -33,5 +33,24 @@ describe("onionFrame", () => {
 
   it("returns null on frame 0 when not looping", () => {
     expect(onionFrame(0, 6, false)).toBeNull();
+  });
+});
+
+describe("consistencyBadge", () => {
+  it("returns null when unchecked", () => {
+    expect(consistencyBadge(null)).toBeNull();
+  });
+
+  it("marks frames above the threshold ok", () => {
+    expect(consistencyBadge(0.92)).toEqual({ percent: 92, ok: true });
+    expect(consistencyBadge(0.85)).toEqual({ percent: 85, ok: true });
+  });
+
+  it("marks frames below the threshold not ok", () => {
+    expect(consistencyBadge(0.64)).toEqual({ percent: 64, ok: false });
+  });
+
+  it("respects a custom threshold", () => {
+    expect(consistencyBadge(0.7, 0.6)?.ok).toBe(true);
   });
 });
