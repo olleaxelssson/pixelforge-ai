@@ -19,9 +19,10 @@
 - (Real-GPU-only pieces of M16 — actual FLUX inference, VRAM numbers — need weights + a GPU)
 
 ## M3 — Animation
-- 13 action templates, seed-anchored frame batches, palette-locked sequences
-- Onion skinning + timeline polish, GIF/sprite-sheet preview and export presets
-- Reference-frame conditioning for cross-frame consistency
+- ✅ (M18) 13 action templates → seed-anchored, palette-locked frame sequences; GIF + sprite-sheet
+- ✅ (M18) Onion-skin + timeline preview in the UI; per-frame QA
+- Reference-frame conditioning for cross-frame consistency (needs a real backend; hook is in place)
+- Export presets polish
 
 ## M4 — Training pipeline & dataset tools
 - Dataset import, validation, duplicate detection (perceptual hash), corrupt-file detection
@@ -172,3 +173,16 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   `POST /api/qa`, and `pixelforge qa --subject --critic vlm`. Surfaced in the QA tab as a critique
   block (verdict + subject-match/appeal meters + notes). New `pixelforge.critic_backends` plugin group.
 - Later: run a real VLM (needs the `[ml]` extra + a model + a GPU); the path is in place and gated.
+
+### M18 — Animation: seed-anchored, palette-locked frame sequences (M3, D-009) ✅
+- Turns an action (13 templates in `animation/actions.py`) into a real multi-frame sprite sequence
+  via `animation/sequence.py` (`AnimationSequence`), reusing the generation pipeline per frame.
+- **Seed anchoring** — every frame shares one seed; only the per-frame action description changes.
+  **Palette lock** — frame 1's palette is reused for all later frames (new
+  `GenerationRequest.locked_palette_hex`, reusing the D-012/M8 lock), so colors never drift.
+- Each frame optionally runs through the QA engine (D-013); frames assemble into a looping **GIF**
+  and a **sprite sheet** (`animation/assembly.py`).
+- `POST /api/animation/generate` + `GET /api/animation/actions`; `pixelforge animate` + `list actions`.
+- **Animation tab** in the UI: action picker, frame-duration slider, an animated stage with
+  **play/pause** + **onion-skin**, a clickable timeline, the locked palette, and GIF/sheet downloads.
+- Pure `playback.ts` (nextFrame/onionFrame) unit-tested; browser E2E of the whole tab.

@@ -9,6 +9,7 @@ from fastapi import Request
 
 from pixelforge.agents.planning_backends.registry import get_planning_backend
 from pixelforge.agents.runtime import PlanningRuntime
+from pixelforge.animation.sequence import AnimationSequence
 from pixelforge.config import Settings, get_settings
 from pixelforge.core.errors import JobCancelledError
 from pixelforge.core.models import GenerationResult, Job
@@ -41,6 +42,7 @@ class AppState:
     planner: PlanningRuntime | None
     qa: QAEngine
     characters: CharacterMemory
+    animation: AnimationSequence
     plugins: PluginReport
 
 
@@ -87,6 +89,11 @@ def build_app_state() -> AppState:
         qa_engine=qa if (settings.qa_enabled and settings.qa_autorepair) else None,
         repair_loop=repair_loop,
     )
+    animation = AnimationSequence(
+        pipeline=pipeline,
+        outputs_dir=settings.outputs_dir,
+        qa_engine=qa if settings.qa_enabled else None,
+    )
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:
         loop = asyncio.get_running_loop()
@@ -111,6 +118,7 @@ def build_app_state() -> AppState:
         planner=planner,
         qa=qa,
         characters=characters,
+        animation=animation,
         plugins=plugins,
     )
 

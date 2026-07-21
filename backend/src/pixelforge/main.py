@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from pixelforge import __version__
 from pixelforge.api.routers import (
+    animation,
     catalog,
     characters,
     export,
@@ -53,6 +54,7 @@ app.include_router(projects.router)
 app.include_router(plan.router)
 app.include_router(qa.router)
 app.include_router(characters.router)
+app.include_router(animation.router)
 app.include_router(plugins.router)
 
 

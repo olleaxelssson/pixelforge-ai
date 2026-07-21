@@ -256,6 +256,35 @@ export interface PaletteAnalysis {
   suggestions: Suggestion[];
 }
 
+// --- Animation (M3/M18) ---
+
+export interface AnimationAction {
+  id: string;
+  name: string;
+  frame_count: number;
+  frame_descriptions: string[];
+  loop: boolean;
+}
+
+export interface AnimationFrame {
+  index: number;
+  filename: string;
+  seed: number;
+  description: string;
+  qa: QAScores | null;
+}
+
+export interface AnimationResult {
+  action: string;
+  action_name: string;
+  loop: boolean;
+  frame_duration_ms: number;
+  palette_hex: string[];
+  frames: AnimationFrame[];
+  gif_filename: string;
+  sheet_filename: string;
+}
+
 // --- Character memory (D-011) ---
 
 export interface CharacterIdentity {

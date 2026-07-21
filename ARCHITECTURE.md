@@ -65,7 +65,7 @@ sequenceDiagram
 | `palettes/` | `Palette` model, extraction (median-cut/octree), quantization + dithering, swapping, import/export (JASC-PAL, GPL, hex JSON), retro-console-inspired presets. **Palette intelligence** (D-012, M8): `color_math.py` (sRGB/Lab, WCAG contrast, CIEDE2000, Machado CVD) + `analysis.py` (ranking, ramps, dedup, CVD confusion, perceptual compression, readability, suggestions) — pure, deterministic, no models. |
 | `styles/` | `StylePreset` registry (NES/SNES/GB/GBA-inspired, modern indie, JRPG, isometric, ...). Data-driven: each preset = prompt fragments + pipeline parameter overrides. Extensible via user TOML files. |
 | `modes/` | `GenerationMode` registry (15 modes). Each mode = prompt template + default size/style/postprocessing. Extensible like styles. |
-| `animation/` | Animation action definitions (13 actions), frame-sequence generation strategy, GIF assembly. |
+| `animation/` | Animation (M3/M18, D-009): action definitions (13, `actions.py`), `AnimationSequence` (`sequence.py`) — seed-anchored + palette-locked frame generation with optional per-frame QA, and GIF + sprite-sheet assembly (`assembly.py`). `POST /api/animation/generate`, `pixelforge animate`. |
 | `exporters/` | PNG, GIF, sprite sheet, texture atlas (JSON), Unity (`.meta`-ready layout), Godot (`.tres`/import hints), Unreal (padded POT sheets). Registry pattern — new exporters register themselves. |
 | `projects/` | Project files (JSON on disk), autosave, session recovery. |
 | `models_manager/` | Model discovery, download, cache dirs, device selection (CUDA → MPS → CPU). |
@@ -96,6 +96,7 @@ Everything downstream of Stage A is deterministic and unit-testable without mode
 | `renderer/features/generation/` | Prompt/controls panel, mode & style pickers, queue view, results grid; inline Scene Graph **plan preview** (M13); **generate-as-character** selector (M14); `recentResults.ts` helper shared with QA/Characters. |
 | `renderer/features/editor/` | Canvas-based pixel editor: tools (pencil/eraser/fill/line/rect/ellipse/select/move), layers, onion skinning, timeline, grid/zoom, tile preview. |
 | `renderer/features/plan/` | Plan preview (M13, D-009/D-010): `POST /api/plan` → Scene Graph summary, silhouette grid, compiled prompt, agent trace. Pure `planView.ts` (tested). |
+| `renderer/features/animation/` | Animation tab (M18, D-009): action picker, animated stage with play/pause + onion-skin, clickable timeline, locked palette, GIF/sheet export. Pure `playback.ts` (tested). |
 | `renderer/features/qa/` | Pixel QA panel (M13, D-013): run detectors on a result/uploaded sprite, score bars + findings, apply safe repairs. Pure `qaView.ts` (tested). |
 | `renderer/features/characters/` | Character manager (M13, D-011): list/create, reference frames, cosine drift meter. |
 | `renderer/features/palettes/` | Palette browser/editor, extraction, locking UI; **Palette Lab** (M13, D-012): contrast/CVD/ramps/readability analysis. |

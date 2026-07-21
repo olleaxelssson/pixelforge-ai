@@ -839,6 +839,122 @@ body {
   color: var(--danger);
 }
 
+/* Animation */
+.anim-view {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 20px;
+}
+
+.anim-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  max-width: 420px;
+  background:
+    conic-gradient(#26262e 90deg, #1c1c22 90deg 180deg, #26262e 180deg 270deg, #1c1c22 270deg)
+    0 0 / 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.anim-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.anim-frame.ghost {
+  opacity: 0.3;
+}
+
+.anim-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.anim-toggle {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.anim-caption {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.anim-desc {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 6px 0 0;
+}
+
+.anim-block {
+  margin-bottom: 18px;
+}
+
+.anim-block h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.filmstrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.filmstrip-frame {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  line-height: 0;
+}
+
+.filmstrip-frame.active {
+  border-color: var(--accent);
+}
+
+.filmstrip-frame img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.anim-export {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.anim-gif {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elevated);
+}
+
+.anim-links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 /* Palette lab */
 .swatch-row {
   display: flex;
