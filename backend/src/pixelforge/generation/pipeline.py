@@ -140,6 +140,7 @@ class GenerationPipeline:
                     transparent_background=request.transparent_background,
                     palette=colors if request.palette_id else None,
                     lighting_direction=request.lighting_direction,
+                    subject=request.prompt,
                 )
                 if self._qa is not None:
                     sprite, _ = self._qa.repair(sprite, context)

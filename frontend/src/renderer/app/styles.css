@@ -585,6 +585,57 @@ body {
   color: var(--text-dim);
 }
 
+.critique {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.critique-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.critique-title {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+}
+
+.critique-verdict {
+  font-weight: 600;
+}
+
+.critique-meters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.critique-meter {
+  display: grid;
+  grid-template-columns: 90px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.score-fill.semantic {
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+}
+
+.critique-notes {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
 .score-bars {
   display: flex;
   flex-direction: column;

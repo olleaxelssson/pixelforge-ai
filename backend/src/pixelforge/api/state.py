@@ -22,6 +22,8 @@ from pixelforge.palettes.service import PaletteService
 from pixelforge.plugins.loader import load_plugins
 from pixelforge.plugins.manifest import PluginReport
 from pixelforge.projects.store import ProjectStore
+from pixelforge.qa.critic import HeuristicCritic, VLMCritic
+from pixelforge.qa.critic_backends.registry import get_critic_backend
 from pixelforge.qa.engine import QAEngine
 from pixelforge.qa.repair_loop import RepairLoop
 from pixelforge.styles.registry import StyleRegistry
@@ -57,7 +59,12 @@ def build_app_state() -> AppState:
         if settings.planning_enabled
         else None
     )
-    qa = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    critic = (
+        VLMCritic(get_critic_backend(settings.vlm_critic_backend))
+        if settings.qa_critic == "vlm"
+        else HeuristicCritic()
+    )
+    qa = QAEngine(critic=critic, pass_threshold=settings.qa_pass_threshold)
     repair_loop = (
         RepairLoop(engine=qa, max_iterations=settings.qa_repair_max_iterations)
         if (settings.qa_enabled and settings.qa_repair_loop)

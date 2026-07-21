@@ -113,6 +113,14 @@ def _build_parser() -> argparse.ArgumentParser:
     qac.add_argument("--palette", default=None, help="Locked palette id (see: list palettes)")
     qac.add_argument("--lighting", default=None, help="Intended light direction, e.g. top-left")
     qac.add_argument(
+        "--subject",
+        default=None,
+        help="Intended subject (enables the semantic critic if configured)",
+    )
+    qac.add_argument(
+        "--critic", default=None, choices=["heuristic", "vlm"], help="Override the QA critic"
+    )
+    qac.add_argument(
         "--opaque", action="store_true", help="Sprite is not on a transparent background"
     )
     qac.add_argument(
@@ -307,8 +315,17 @@ def _cmd_qa(args: argparse.Namespace) -> int:
         transparent_background=not args.opaque,
         palette=palette,
         lighting_direction=args.lighting,
+        subject=args.subject,
     )
-    engine = QAEngine(pass_threshold=settings.qa_pass_threshold)
+    critic_kind = args.critic or settings.qa_critic
+    if critic_kind == "vlm":
+        from pixelforge.qa.critic import VLMCritic
+        from pixelforge.qa.critic_backends.registry import get_critic_backend
+
+        critic = VLMCritic(get_critic_backend(settings.vlm_critic_backend))
+        engine = QAEngine(critic=critic, pass_threshold=settings.qa_pass_threshold)
+    else:
+        engine = QAEngine(pass_threshold=settings.qa_pass_threshold)
     if args.repair_loop:
         from pixelforge.qa.repair_loop import RepairLoop
 

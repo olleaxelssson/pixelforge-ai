@@ -14,7 +14,8 @@ import numpy as np
 from pixelforge.core.scene_graph import Finding, FindingSeverity
 from pixelforge.palettes.analysis import analyze_palette
 from pixelforge.palettes.model import Palette, rgb_to_hex
-from pixelforge.qa.models import DetectorContext, QAScores
+from pixelforge.qa.critic_backends.base import CriticBackend
+from pixelforge.qa.models import Critique, DetectorContext, QAScores
 
 _COLOR_CAP = 64
 _CLEAN_DETECTORS = {"floating-pixel", "broken-cluster", "palette-overflow"}
@@ -26,6 +27,16 @@ class Critic(ABC):
         self, rgba: np.ndarray, context: DetectorContext, findings: list[Finding]
     ) -> QAScores:
         """Score the sprite in [0, 1] on each axis plus an overall."""
+
+    def evaluate(
+        self, rgba: np.ndarray, context: DetectorContext, findings: list[Finding]
+    ) -> tuple[QAScores, Critique | None]:
+        """Score the sprite and, optionally, produce a semantic :class:`Critique`.
+
+        The default is score-only (no critique). A semantic critic overrides this to assess once and
+        fold its judgment into ``overall`` — one place so a real VLM is called at most once per run.
+        """
+        return self.score(rgba, context, findings), None
 
 
 def _dominant_colors(rgba: np.ndarray) -> tuple[list[str], int]:
@@ -85,3 +96,38 @@ class HeuristicCritic(Critic):
             cleanliness=round(cleanliness, 3),
             overall=round(overall, 3),
         )
+
+
+# How much a semantic critic's judgment moves the overall score away from the pixel heuristics.
+_SEMANTIC_WEIGHT = 0.30
+_APPEAL_WEIGHT = 0.10
+
+
+class VLMCritic(Critic):
+    """Semantic critic: pixel heuristics + a critic backend's ``subject_match``/``appeal``.
+
+    Reuses :class:`HeuristicCritic` for the pixel axes, then blends the backend's semantic judgment
+    into ``overall`` — so a clean sprite that doesn't *read as* the intended subject scores lower,
+    and the M15 repair loop (which accepts only on a higher overall) optimizes for it too.
+    """
+
+    def __init__(self, backend: CriticBackend, heuristic: HeuristicCritic | None = None) -> None:
+        self._backend = backend
+        self._heuristic = heuristic or HeuristicCritic()
+
+    def score(
+        self, rgba: np.ndarray, context: DetectorContext, findings: list[Finding]
+    ) -> QAScores:
+        return self.evaluate(rgba, context, findings)[0]
+
+    def evaluate(
+        self, rgba: np.ndarray, context: DetectorContext, findings: list[Finding]
+    ) -> tuple[QAScores, Critique | None]:
+        scores = self._heuristic.score(rgba, context, findings)
+        critique = self._backend.assess(rgba, context)
+        blended = (
+            (1.0 - _SEMANTIC_WEIGHT - _APPEAL_WEIGHT) * scores.overall
+            + _SEMANTIC_WEIGHT * critique.subject_match
+            + _APPEAL_WEIGHT * critique.appeal
+        )
+        return scores.model_copy(update={"overall": round(blended, 3)}), critique

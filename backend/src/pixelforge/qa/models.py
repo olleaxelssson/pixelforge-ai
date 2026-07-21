@@ -19,6 +19,7 @@ class DetectorContext:
     palette: list[RGB] | None = None  # locked palette colors, if any
     lighting_direction: str | None = None  # e.g. "top-left"; None disables the light-dir check
     min_cluster_size: int = 3
+    subject: str | None = None  # intended subject, e.g. "a knight" — enables the semantic critic
 
 
 class QAScores(BaseModel):
@@ -30,9 +31,25 @@ class QAScores(BaseModel):
     overall: float = 0.0
 
 
+class Critique(BaseModel):
+    """Semantic/perceptual judgment from a critic backend (D-013 Layer 2).
+
+    Beyond the pixel heuristics: does the sprite *read as* the intended subject, and does it appeal?
+    ``subject_match``/``appeal`` are in [0, 1]; ``notes`` are short human-readable observations.
+    """
+
+    backend: str
+    subject: str | None = None
+    subject_match: float = 0.0
+    appeal: float = 0.0
+    verdict: str = ""
+    notes: list[str] = Field(default_factory=list)
+
+
 class QAReport(BaseModel):
     width: int
     height: int
     passed: bool
     scores: QAScores
     findings: list[Finding] = Field(default_factory=list)
+    critique: Critique | None = None  # present when a semantic critic (VLM) is active

@@ -23,6 +23,7 @@ class QARequest(BaseModel):
     transparent_background: bool = True
     palette_id: str | None = None
     lighting_direction: str | None = None
+    subject: str | None = None  # intended subject, enables the semantic critic (D-013)
     repair: bool = False
     # Layer 2 (D-013): regenerate failing regions for up to ``max_iterations`` bounded passes.
     repair_loop: bool = False
@@ -59,6 +60,7 @@ async def run_qa(request: QARequest, state: AppState = Depends(get_state)) -> QA
         transparent_background=request.transparent_background,
         palette=palette,
         lighting_direction=request.lighting_direction,
+        subject=request.subject,
     )
 
     if request.repair_loop:

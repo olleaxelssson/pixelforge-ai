@@ -51,6 +51,7 @@ export const api = {
     transparent_background?: boolean;
     palette_id?: string | null;
     lighting_direction?: string | null;
+    subject?: string | null;
     repair?: boolean;
     repair_loop?: boolean;
     max_iterations?: number;

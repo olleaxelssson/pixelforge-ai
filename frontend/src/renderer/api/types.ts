@@ -176,12 +176,22 @@ export interface QAScores {
   overall: number;
 }
 
+export interface Critique {
+  backend: string;
+  subject: string | null;
+  subject_match: number;
+  appeal: number;
+  verdict: string;
+  notes: string[];
+}
+
 export interface QAReport {
   width: number;
   height: number;
   passed: boolean;
   scores: QAScores;
   findings: Finding[];
+  critique: Critique | null;
 }
 
 export interface RepairAttempt {

@@ -33,6 +33,8 @@ from pixelforge.plugins.manifest import (
     PluginReport,
     SkippedPlugin,
 )
+from pixelforge.qa.critic_backends.base import CriticBackend
+from pixelforge.qa.critic_backends.registry import register_critic_backend
 from pixelforge.qa.detectors.base import Detector
 from pixelforge.qa.registry import register_detector
 
@@ -72,6 +74,9 @@ def _register_component(group: str, obj: object) -> None:
     elif group == "pixelforge.embedding_backends":
         _expect(obj, EmbeddingBackend, group)
         register_embedding_backend(lambda instance=obj: instance)  # type: ignore[misc, return-value]
+    elif group == "pixelforge.critic_backends":
+        _expect(obj, CriticBackend, group)
+        register_critic_backend(obj)  # type: ignore[arg-type]
     else:  # pragma: no cover - guarded by COMPONENT_GROUPS
         raise ValueError(f"unknown entry point group: {group}")
 
@@ -83,6 +88,7 @@ COMPONENT_GROUPS: tuple[str, ...] = (
     "pixelforge.generation_backends",
     "pixelforge.planning_backends",
     "pixelforge.embedding_backends",
+    "pixelforge.critic_backends",
 )
 
 _report: PluginReport | None = None

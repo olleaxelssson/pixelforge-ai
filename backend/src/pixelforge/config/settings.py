@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     # still fails after safe repair has its failing regions regenerated for up to N bounded passes.
     qa_repair_loop: bool = False
     qa_repair_max_iterations: int = 2
+    # Semantic critic (D-013): "heuristic" (pixel signals only) | "vlm" (adds a critic backend's
+    # subject-match/appeal judgment to the score). ``vlm_critic_backend``: "auto" | "mock" | "vlm".
+    qa_critic: str = "heuristic"
+    vlm_critic_backend: str = "auto"
+    vlm_critic_model_id: str = "HuggingFaceTB/SmolVLM-Instruct"
 
     # Plugin SDK (D-014). Off by default: plugins load only when enabled AND their distribution
     # name is on the explicit allowlist — plugins run in-process with full trust.

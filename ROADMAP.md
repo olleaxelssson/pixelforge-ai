@@ -156,3 +156,19 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   asserted; reports device + peak VRAM when a GPU is present. Runs in CI against the mock.
 - Needs real hardware to finish: actual FLUX inference, fp8/offload/VRAM numbers, ControlNet output
   quality. The code paths are in place and gated; only execution-on-GPU remains.
+
+### M17 — Semantic critic for QA (D-013) ✅ (mock-verifiable parts)
+- Completes the "critique" side with real *judgment*: does the sprite **read as** the intended
+  subject, and is it appealing — beyond the pixel heuristics.
+- `qa/critic_backends/` (swappable, mirrors the generation backends): deterministic
+  `MockCriticBackend` (runs in CI; `appeal` is a real palette-readability signal, `subject_match` a
+  deterministic subject+image proxy) and a **gated** `VLMCriticBackend` (transformers/torch, prompts
+  a vision-language model for a JSON assessment; defensively parsed). Chosen via a registry.
+- `VLMCritic` implements the existing `Critic` interface (new `Critic.evaluate()` returns scores +
+  an optional `Critique`), reuses `HeuristicCritic` for the pixel axes, and **folds subject-match/
+  appeal into `overall`** — so the M15 repair loop (accepts only on a higher overall) optimizes for
+  "reads as the subject" too.
+- Opt-in via `qa_critic=vlm` (+ `vlm_critic_backend`); `subject` threaded through the pipeline,
+  `POST /api/qa`, and `pixelforge qa --subject --critic vlm`. Surfaced in the QA tab as a critique
+  block (verdict + subject-match/appeal meters + notes). New `pixelforge.critic_backends` plugin group.
+- Later: run a real VLM (needs the `[ml]` extra + a model + a GPU); the path is in place and gated.
