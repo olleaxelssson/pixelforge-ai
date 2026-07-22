@@ -32,6 +32,7 @@ cd backend
 .venv/bin/pixelforge generate "health potion" --mode item \
     --palette 8bit-console --dither ordered -o /tmp/sprites
 .venv/bin/pixelforge generate "mossy stone floor" --mode tileset --tileable -o /tmp/sprites  # seam-blended, tiles seamlessly
+.venv/bin/pixelforge tileset "grass field" --variants 4 --seed 5 -o /tmp/tiles  # coherent seam-locked terrain family + 47-tile blob sheet
 .venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export   # also: aseprite, wang-blob, gif, sprite-sheet, godot, unreal, texture-atlas
 .venv/bin/pixelforge plan "a knight with a flaming sword" --mode character   # Scene Graph, no image
 .venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
@@ -81,12 +82,14 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/memory/` — character memory (D-011): `Character` store + reference frames + identity embeddings (mock backend), drift gate; opt-in per request via `character_id`, exposed via `/api/characters` and `pixelforge character`
 - `backend/src/pixelforge/palettes/`, `styles/`, `modes/`, `exporters/` — data-driven registries; extend by adding entries, not by editing consumers
 - `backend/src/pixelforge/animation/` — animation (D-009, M18/M19): `actions.py` (13 templates), `sequence.py` (`AnimationSequence`: seed-anchored + palette-locked frames, per-frame QA, reference chaining + per-frame identity-consistency reusing D-011 embeddings), `assembly.py` (GIF + sprite sheet); `POST /api/animation/generate`, `pixelforge animate [--reference-chain --consistency]`
+- `backend/src/pixelforge/tileset/` — Tileset generation (D-001, M23): `service.py` (`TileSet`: base tile + N seam-locked variants sharing one seed + one locked palette; edge-locked via `tileize.lock_edges_to` + re-quantize, checked with `edge_consistency`; variants assembled into the 47-tile Wang/blob sheet); `POST /api/tileset/generate`, `pixelforge tileset "<prompt>" --variants N`, Tileset tab
 - `backend/src/pixelforge/dataset/` — Dataset & LoRA-training toolkit (D-001, M21): `builder.py` (pure `build_dataset`: validate → dedup → caption → kohya `manifest.jsonl` + `lora_config.json`), `phash.py` (NEAREST-resize dHash + Hamming clustering, cross-machine deterministic), `caption.py` (reuses D-012 palette signals, no model), `trainer.py` (`LoraTrainer` gated like FLUX); `POST /api/dataset`, `pixelforge dataset build <dir>`, Dataset tab
 - `backend/src/pixelforge/plugins/` — Plugin SDK (D-014): `loader.py` discovers `pixelforge.*` entry points + required `PluginManifest`, registers into existing registries; off by default (`plugins_enabled` + `plugin_allowlist`), exposed via `GET /api/plugins` and `pixelforge list plugins`. Guide: `docs/developer/plugins.md`; sample: `examples/plugins/pixelforge-hello`
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)
 - `frontend/src/renderer/features/{plan,qa,characters,palettes,dataset}/` — UI for the agentic layer (M13) + Dataset tab (M21): plan preview, QA panel, character manager, palette lab, dataset builder; pure view helpers (`planView.ts`, `qaView.ts`, `datasetView.ts`) are unit-tested, React components are not (test env is node-only)
 - `frontend/src/renderer/features/generation/{TilePreview.tsx,tileView.ts}` — seamless-tiling toggle + live 3×3 tiling preview with a seamlessness readout (M22); pure `tileView.ts` (`seamScore`) is unit-tested
+- `frontend/src/renderer/features/tileset/` — Tileset tab (M23): generate a seam-locked terrain family, pick a variant brush, paint an N×N grid that renders tiles edge-to-edge, coherence badge + 47-tile blob sheet; pure `tilesetView.ts` unit-tested
 - `frontend/src/shared/config.ts` — frontend configuration
 
 ## Conventions

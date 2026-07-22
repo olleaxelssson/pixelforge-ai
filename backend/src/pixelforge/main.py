@@ -23,6 +23,7 @@ from pixelforge.api.routers import (
     plugins,
     projects,
     qa,
+    tileset,
 )
 from pixelforge.api.state import build_app_state
 from pixelforge.core.logging_setup import configure_logging
@@ -59,6 +60,7 @@ app.include_router(characters.router)
 app.include_router(animation.router)
 app.include_router(plugins.router)
 app.include_router(dataset.router)
+app.include_router(tileset.router)
 
 
 @app.get("/api/health")

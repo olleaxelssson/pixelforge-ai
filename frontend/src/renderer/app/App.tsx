@@ -8,14 +8,24 @@ import { GenerationPanel } from "../features/generation/GenerationPanel";
 import { ResultsPanel } from "../features/generation/ResultsPanel";
 import { PalettePanel } from "../features/palettes/PalettePanel";
 import { QAPanel } from "../features/qa/QAPanel";
+import { TilesetPanel } from "../features/tileset/TilesetPanel";
 import { useGenerationStore } from "../state/generationStore";
 
-type View = "generate" | "editor" | "animation" | "qa" | "characters" | "palettes" | "dataset";
+type View =
+  | "generate"
+  | "editor"
+  | "animation"
+  | "tileset"
+  | "qa"
+  | "characters"
+  | "palettes"
+  | "dataset";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "generate", label: "Generate" },
   { id: "editor", label: "Editor" },
   { id: "animation", label: "Animation" },
+  { id: "tileset", label: "Tileset" },
   { id: "qa", label: "QA" },
   { id: "characters", label: "Characters" },
   { id: "palettes", label: "Palette Lab" },
@@ -66,6 +76,7 @@ export function App() {
         )}
         {view === "editor" && <EditorPanel />}
         {view === "animation" && <AnimationPanel />}
+        {view === "tileset" && <TilesetPanel />}
         {view === "qa" && <QAPanel />}
         {view === "characters" && <CharactersPanel />}
         {view === "palettes" && <PalettePanel />}

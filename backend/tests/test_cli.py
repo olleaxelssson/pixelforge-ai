@@ -84,6 +84,29 @@ def test_generate_tileable(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -
     assert seam_score(np.asarray(image)) == 1.0
 
 
+def test_tileset(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(
+        [
+            "tileset",
+            "grass field",
+            "--variants",
+            "3",
+            "--size",
+            "32",
+            "--seed",
+            "5",
+            "-o",
+            str(tmp_path),
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["variant_count"] == 3
+    assert payload["coherent"] is True
+    assert Path(payload["sheet_path"]).exists()
+    assert all(Path(t["path"]).exists() for t in payload["tiles"])
+
+
 def test_export_wang_blob(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     tile = tmp_path / "grass.png"
     Image.new("RGBA", (16, 16), (120, 180, 90, 255)).save(tile)

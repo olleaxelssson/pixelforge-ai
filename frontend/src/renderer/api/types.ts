@@ -326,6 +326,28 @@ export interface DriftResult {
   consistent: boolean;
 }
 
+// --- Tileset generation (M23) ---
+
+export interface TileVariant {
+  index: number;
+  filename: string;
+  seed: number;
+  seam_score: number;
+  edge_consistency: number;
+}
+
+export interface TileSetResult {
+  prompt: string;
+  variant_count: number;
+  palette_hex: string[];
+  base_seed: number;
+  tiles: TileVariant[];
+  sheet_filename: string;
+  mean_edge_consistency: number;
+  min_edge_consistency: number;
+  coherent: boolean;
+}
+
 // --- Dataset & LoRA-training toolkit (M4/M21) ---
 
 export interface DatasetItem {

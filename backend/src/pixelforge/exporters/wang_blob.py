@@ -68,9 +68,11 @@ class WangBlobExporter(Exporter):
     display_name = "Wang/Blob Auto-Tile Sheet (47)"
 
     def export(self, asset: ExportAsset, options: ExportOptions, dest: Path) -> list[Path]:
-        base_img = asset.scaled_frames(options.scale)[0].convert("RGBA")
-        base = np.asarray(base_img, dtype=np.uint8)
-        height, width = base.shape[:2]
+        # One base tile → one blob set. Multiple frames (M23 seam-locked variants, which share
+        # edges) are cycled across the 47 cells so the sheet shows the whole terrain family.
+        frames = asset.scaled_frames(options.scale)
+        bases = [np.asarray(f.convert("RGBA"), dtype=np.uint8) for f in frames]
+        height, width = bases[0].shape[:2]
         band = max(1, min(width, height) // 4)
 
         masks = blob_masks()
@@ -84,6 +86,7 @@ class WangBlobExporter(Exporter):
         for index, mask in enumerate(masks):
             col, row = index % columns, index // columns
             x, y = col * cell_w, row * cell_h
+            base = bases[index % len(bases)]  # cycle variants across cells
             tile = _render_tile(base, mask, band)
             sheet.paste(Image.fromarray(tile, "RGBA"), (x, y))
             mapping.append(

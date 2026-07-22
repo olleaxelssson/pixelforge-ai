@@ -7,6 +7,7 @@ import type {
   CharacterIdentity,
   DatasetReport,
   DriftResult,
+  TileSetResult,
   GenerationMode,
   GenerationRequest,
   Job,
@@ -86,6 +87,22 @@ export const api = {
     images: { name: string; image_base64: string }[];
     dup_distance?: number;
   }) => request<DatasetReport>("/api/dataset", { method: "POST", body: JSON.stringify(body) }),
+
+  generateTileset: (body: {
+    prompt: string;
+    variants?: number;
+    mode?: string;
+    style?: string;
+    width?: number;
+    height?: number;
+    seed?: number | null;
+    palette_id?: string | null;
+    max_colors?: number;
+  }) =>
+    request<TileSetResult>("/api/tileset/generate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 
   animationActions: () => request<AnimationAction[]>("/api/animation/actions"),
   animate: (body: {

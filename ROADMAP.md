@@ -32,6 +32,7 @@
 
 ## M5 — Editor & UX depth
 - ✅ (M22) Seamless tiling (seam-blend) + live tiling preview; Wang/blob auto-tile export
+- ✅ (M23) Tileset generation mode: coherent seam-locked terrain families + paintable preview
 - Dockable/multi-window layouts, advanced selection, palette editor v2
 - Autosave/session recovery hardening, project templates
 - ✅ (M20) Aseprite-compatible export (.aseprite writer)
@@ -252,3 +253,19 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   flag on the generate/QA endpoints, and a **live tiling preview** in the Generate tab: a 3x3 repeat
   with a seamlessness readout, computed client-side by the pure `tileView.ts` `seamScore`
   (unit-tested). Browser E2E confirmed a "100% seamless" preview.
+
+### M23 — Tileset generation mode & multi-tile terrain sets (M5, D-001) ✅
+- New `tileset/` service builds a **coherent terrain family** on top of M22's seamless path: a base
+  tile plus N variants that all **share the base's edges**, so any two abut cleanly *and* each still
+  tiles by itself. Coherence uses the same mechanisms the animation sequence uses for frames —
+  **seed anchoring** (base seed + variant offset), **palette lock** (the base's palette reused for
+  every variant), and **edge lock**: each variant is generated seamless, then `tileize.lock_edges_to`
+  blends its edge band to exactly the base's and re-quantizes back onto the palette. Consistency is
+  measured with the M22 seam metrics (`cross_seam_metrics` / `edge_consistency`).
+- The variants **assemble straight into the 47-tile Wang/blob sheet** — the exporter now cycles all
+  frames across the cells (backward compatible with a single base tile), so one call yields a
+  paintable, engine-ready auto-tile set where any cell can hold any variant and still abut cleanly.
+- Surfaced as `pixelforge tileset "grass field" --variants 4` and `POST /api/tileset/generate`. New
+  **Tileset** tab: generate a set, pick a variant brush, and paint an N×N grid that renders the
+  tiles edge-to-edge as one continuous surface, with a coherence badge and the blob sheet. Pure
+  `tilesetView.ts` unit-tested; browser E2E confirmed a "100% · tiles abut cleanly" set.

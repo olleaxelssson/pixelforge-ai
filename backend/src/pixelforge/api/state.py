@@ -28,6 +28,7 @@ from pixelforge.qa.critic_backends.registry import get_critic_backend
 from pixelforge.qa.engine import QAEngine
 from pixelforge.qa.repair_loop import RepairLoop
 from pixelforge.styles.registry import StyleRegistry
+from pixelforge.tileset.service import TileSet
 
 
 @dataclass
@@ -43,6 +44,7 @@ class AppState:
     qa: QAEngine
     characters: CharacterMemory
     animation: AnimationSequence
+    tileset: TileSet
     plugins: PluginReport
 
 
@@ -96,6 +98,7 @@ def build_app_state() -> AppState:
         embeddings=get_embedding_backend(settings.memory_embedding_backend),
         drift_threshold=settings.memory_drift_threshold,
     )
+    tileset = TileSet(pipeline=pipeline, outputs_dir=settings.outputs_dir)
 
     async def run_job(job: Job, queue: JobQueue) -> GenerationResult:
         loop = asyncio.get_running_loop()
@@ -121,6 +124,7 @@ def build_app_state() -> AppState:
         qa=qa,
         characters=characters,
         animation=animation,
+        tileset=tileset,
         plugins=plugins,
     )
 

@@ -64,3 +64,54 @@ def seam_score(rgba: np.ndarray) -> float:
     """A single seamlessness score in [0, 1] (1 = perfectly seamless)."""
     horizontal, vertical = seam_metrics(rgba)
     return 1.0 - max(horizontal, vertical)
+
+
+def lock_edges_to(
+    image: Image.Image, reference: Image.Image, blend_fraction: float = DEFAULT_BLEND_FRACTION
+) -> Image.Image:
+    """Blend ``image``'s edge bands toward ``reference``'s so the two tiles share edges (M23).
+
+    The weight is 1.0 at the very edge (the outermost ring becomes *exactly* the reference's) and
+    fades to 0 toward the interior. When the reference already tiles (its left == right, top ==
+    bottom), every image locked to it inherits those edges — so any two locked tiles abut cleanly
+    *and* each still self-tiles. Interior content is left free to vary between variants.
+    """
+    img = np.asarray(image.convert("RGBA"), dtype=np.float64).copy()
+    ref = np.asarray(reference.convert("RGBA"), dtype=np.float64)
+    height, width = img.shape[:2]
+    band_w = max(1, int(round(width * blend_fraction)))
+    band_h = max(1, int(round(height * blend_fraction)))
+
+    for i in range(band_w):
+        weight = 1.0 - i / band_w  # 1.0 at the edge → 0 toward the interior
+        img[:, i] = (1.0 - weight) * img[:, i] + weight * ref[:, i]
+        img[:, width - 1 - i] = (1.0 - weight) * img[:, width - 1 - i] + weight * ref[
+            :, width - 1 - i
+        ]
+    for j in range(band_h):
+        weight = 1.0 - j / band_h
+        img[j, :] = (1.0 - weight) * img[j, :] + weight * ref[j, :]
+        img[height - 1 - j, :] = (1.0 - weight) * img[height - 1 - j, :] + weight * ref[
+            height - 1 - j, :
+        ]
+
+    return Image.fromarray(np.rint(img).astype(np.uint8), "RGBA")
+
+
+def cross_seam_metrics(a_rgba: np.ndarray, b_rgba: np.ndarray) -> tuple[float, float]:
+    """How cleanly tile ``b`` abuts tile ``a``: b's left vs a's right, b's top vs a's bottom.
+
+    Returns ``(horizontal, vertical)`` mean per-channel difference in [0, 1] — 0 means the tiles
+    join without a seam when ``b`` is placed to the right of / below ``a``.
+    """
+    a = a_rgba[..., :3].astype(np.float64)
+    b = b_rgba[..., :3].astype(np.float64)
+    horizontal = float(np.abs(b[:, 0] - a[:, -1]).mean()) / 255.0
+    vertical = float(np.abs(b[0, :] - a[-1, :]).mean()) / 255.0
+    return horizontal, vertical
+
+
+def edge_consistency(a_rgba: np.ndarray, b_rgba: np.ndarray) -> float:
+    """A single [0, 1] score for how cleanly two tiles abut (1 = share edges exactly)."""
+    horizontal, vertical = cross_seam_metrics(a_rgba, b_rgba)
+    return 1.0 - max(horizontal, vertical)

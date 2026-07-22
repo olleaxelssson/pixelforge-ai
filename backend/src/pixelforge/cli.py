@@ -205,6 +205,19 @@ def _build_parser() -> argparse.ArgumentParser:
     bench.add_argument("--backend", default=None, help="Override backend (mock|flux-schnell|auto)")
     bench.add_argument("-o", "--output", default=None, help="Write the JSON report to this path")
 
+    tset = sub.add_parser(
+        "tileset", help="Generate a coherent, seam-locked terrain tile family + auto-tile sheet"
+    )
+    tset.add_argument("prompt")
+    tset.add_argument("--variants", type=int, default=4, help="Number of tiles in the family")
+    tset.add_argument("--mode", default="tileset")
+    tset.add_argument("--style", default="modern-indie")
+    tset.add_argument("--size", default="32", help="WIDTHxHEIGHT or a single number")
+    tset.add_argument("--seed", type=int, default=None)
+    tset.add_argument("--palette", default=None, help="Palette id to lock (see: list palettes)")
+    tset.add_argument("--max-colors", type=int, default=16)
+    tset.add_argument("-o", "--output-dir", default=".", help="Directory for tiles + blob sheet")
+
     ds = sub.add_parser("dataset", help="Build a LoRA training dataset from a folder of sprites")
     ds_sub = ds.add_subparsers(dest="dataset_command", required=True)
     ds_build = ds_sub.add_parser(
@@ -573,6 +586,46 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_tileset(args: argparse.Namespace) -> int:
+    from pixelforge.tileset.service import TileSet, TileSetRequest
+
+    settings = get_settings()
+    width, height = _parse_size(args.size)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pipeline = GenerationPipeline(
+        backend_name=settings.backend,
+        outputs_dir=output_dir,
+        modes=ModeRegistry(),
+        styles=StyleRegistry(user_dir=settings.user_styles_dir),
+        palettes=PaletteService(user_dir=settings.user_palettes_dir),
+        diffusion_resolution=settings.diffusion_resolution,
+        diffusion_steps=settings.diffusion_steps,
+    )
+    request = TileSetRequest(
+        prompt=args.prompt,
+        variants=args.variants,
+        mode=args.mode,
+        style=args.style,
+        width=width,
+        height=height,
+        seed=args.seed,
+        palette_id=args.palette,
+        max_colors=args.max_colors,
+    )
+
+    def on_progress(stage: str, percent: float) -> None:
+        print(f"{stage} {percent:.0f}%", file=sys.stderr)
+
+    result = TileSet(pipeline, output_dir).generate("cli", request, on_progress)
+    payload = result.model_dump()
+    payload["sheet_path"] = str(output_dir / result.sheet_filename)
+    for tile, meta in zip(payload["tiles"], result.tiles, strict=True):
+        tile["path"] = str(output_dir / meta.filename)
+    print(json.dumps(payload, indent=2))
+    return 0
+
+
 def _cmd_dataset(args: argparse.Namespace) -> int:
     directory = Path(args.directory)
     if not directory.is_dir():
@@ -614,6 +667,7 @@ def main(argv: list[str] | None = None) -> int:
         "animate": _cmd_animate,
         "character": _cmd_character,
         "export": _cmd_export,
+        "tileset": _cmd_tileset,
         "dataset": _cmd_dataset,
         "list": _cmd_list,
         "system": _cmd_system,
