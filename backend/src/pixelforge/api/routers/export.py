@@ -60,7 +60,9 @@ async def export(request: ExportRequest, state: AppState = Depends(get_state)) -
         paths = exporter.export(ExportAsset(frames=frames), request.options, Path(tmp))
         if len(paths) == 1:
             payload = paths[0].read_bytes()
-            media = "image/gif" if paths[0].suffix == ".gif" else "image/png"
+            media = {".gif": "image/gif", ".png": "image/png"}.get(
+                paths[0].suffix, "application/octet-stream"
+            )
             headers = {"Content-Disposition": f'attachment; filename="{paths[0].name}"'}
             return Response(content=payload, media_type=media, headers=headers)
         buffer = io.BytesIO()

@@ -33,7 +33,7 @@
 ## M5 — Editor & UX depth
 - Dockable/multi-window layouts, tile preview (seamless mode), advanced selection, palette editor v2
 - Autosave/session recovery hardening, project templates
-- Aseprite-compatible export (.ase/.aseprite writer)
+- ✅ (M20) Aseprite-compatible export (.aseprite writer)
 
 ## M6 — Extensibility & release
 - Plugin API (Python entry points + frontend extension slots)
@@ -200,3 +200,15 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   per-frame consistency badge on the timeline, and a mean/min consistency line. Pure
   `consistencyBadge` unit-tested; browser E2E confirmed the readout.
 - Later: run a real img2img backend so reference chaining actually raises the consistency numbers.
+
+### M20 — Aseprite-compatible export (M5, D-001) ✅
+- `exporters/aseprite.py`: a pure `build_aseprite(frames)` serializer writing the documented
+  `.aseprite` binary (indexed 8bpp, one layer, cels per frame, palette from the frames) so a
+  generated animation round-trips into Aseprite. `AsepriteExporter` registers into the exporter
+  registry, so `pixelforge export --format aseprite`, `POST /api/export`, and the export catalog
+  pick it up automatically.
+- **Cels are written uncompressed** (type 0) → byte-deterministic across machines (no zlib version
+  dependency), so a real **byte-exact golden test** runs in CI; structure is also verified by a
+  `parse_aseprite` round-trip that reconstructs every original frame from the indexed cels.
+- Wired into the UI: a **download .aseprite** button in the Animation tab's export block (posts the
+  frame filenames to `/api/export`); CORS now exposes `Content-Disposition` so the filename is kept.

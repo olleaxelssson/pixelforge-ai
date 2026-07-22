@@ -31,7 +31,7 @@ cd backend
     --mode character --size 32 --seed 42 --batch 2 -o /tmp/sprites
 .venv/bin/pixelforge generate "health potion" --mode item \
     --palette 8bit-console --dither ordered -o /tmp/sprites
-.venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export
+.venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export   # also: aseprite, gif, sprite-sheet, godot, unreal, texture-atlas
 .venv/bin/pixelforge plan "a knight with a flaming sword" --mode character   # Scene Graph, no image
 .venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
 .venv/bin/pixelforge qa sprite.png --repair -o fixed.png  # detect defects; --repair applies safe fixes

@@ -44,6 +44,7 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],  # so the renderer can read the export filename
 )
 
 app.include_router(generation.router)

@@ -101,6 +101,31 @@ export const api = {
     }),
 };
 
+/** POST an export request and trigger a browser download of the returned file. */
+export async function downloadExport(body: {
+  format_id: string;
+  filenames?: string[];
+  frames_base64?: string[];
+  options?: { base_name?: string; frame_duration_ms?: number; scale?: number };
+}): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`export failed: ${response.status} ${await response.text()}`);
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="?([^"]+)"?/.exec(disposition);
+  const filename = match?.[1] ?? `${body.options?.base_name ?? "export"}`;
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
 /** Subscribe to job progress over WebSocket; returns an unsubscribe function. */
 export function subscribeToJob(jobId: string, onUpdate: (job: Job) => void): () => void {
   const socket = new WebSocket(`${WS_BASE_URL}/api/ws/jobs/${jobId}`);

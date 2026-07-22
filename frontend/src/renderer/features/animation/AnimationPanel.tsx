@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { api } from "../../api/client";
+import { api, downloadExport } from "../../api/client";
 import type { AnimationAction, AnimationResult } from "../../api/types";
 import { useGenerationStore } from "../../state/generationStore";
 import { consistencyBadge, nextFrame, onionFrame } from "./playback";
@@ -279,6 +279,18 @@ export function AnimationPanel() {
                     <a className="link-button" href={api.imageUrl(result.sheet_filename)} download>
                       download sprite sheet
                     </a>
+                    <button
+                      className="link-button"
+                      onClick={() =>
+                        void downloadExport({
+                          format_id: "aseprite",
+                          filenames: result.frames.map((f) => f.filename),
+                          options: { base_name: result.action },
+                        })
+                      }
+                    >
+                      download .aseprite
+                    </button>
                   </div>
                 </div>
               </div>

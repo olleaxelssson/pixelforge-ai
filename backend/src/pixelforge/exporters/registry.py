@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pixelforge.core.errors import UnknownRegistryKeyError
+from pixelforge.exporters.aseprite import AsepriteExporter
 from pixelforge.exporters.base import Exporter
 from pixelforge.exporters.engines import GodotExporter, UnityExporter, UnrealExporter
 from pixelforge.exporters.standard import (
@@ -25,6 +26,7 @@ def _ensure_registered() -> None:
             UnityExporter(),
             GodotExporter(),
             UnrealExporter(),
+            AsepriteExporter(),
         ):
             _EXPORTERS[exporter.format_id] = exporter
 
