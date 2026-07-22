@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PixelForge AI — Standalone</title>
+<style>
+  :root {
+    --bg: #101014; --bg-panel: #17171d; --bg-elevated: #1f1f27; --border: #2b2b36;
+    --text: #e8e8ee; --text-dim: #9a9aa8; --accent: #e4632a; --accent-hover: #f07a42;
+    --success: #4caf7d; --danger: #d84c4c; --radius: 6px;
+    --checker: repeating-conic-gradient(#2b2b36 0% 25%, #23232b 0% 50%) 50% / 16px 16px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg); color: var(--text); }
+  header { display: flex; align-items: center; gap: 16px; padding: 10px 18px;
+    background: var(--bg-panel); border-bottom: 1px solid var(--border); }
+  .title { font-weight: 700; letter-spacing: 0.3px; }
+  .title span { color: var(--accent); }
+  nav { display: flex; gap: 4px; }
+  nav button { background: transparent; color: var(--text-dim); border: 0; padding: 6px 14px;
+    border-radius: var(--radius); cursor: pointer; font-size: 14px; }
+  nav button.active { background: var(--bg-elevated); color: var(--text); }
+  .badge { margin-left: auto; font-size: 12px; color: var(--text-dim); }
+  main { display: grid; grid-template-columns: 300px 1fr; gap: 0; height: calc(100vh - 53px); }
+  aside { padding: 18px; overflow-y: auto; border-right: 1px solid var(--border); background: var(--bg-panel); }
+  section { padding: 24px; overflow: auto; }
+  h2 { margin: 0 0 14px; font-size: 18px; }
+  h4 { margin: 18px 0 8px; font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.4px; }
+  .field { margin-bottom: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+  label { font-size: 12px; color: var(--text-dim); }
+  input, select, textarea { background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 7px 9px; font: inherit; }
+  textarea { resize: vertical; min-height: 54px; }
+  button.primary { width: 100%; background: var(--accent); color: #fff; border: 0; padding: 11px;
+    border-radius: var(--radius); font-weight: 600; cursor: pointer; margin-top: 4px; }
+  button.primary:hover { background: var(--accent-hover); }
+  button.small { background: var(--bg-elevated); color: var(--text); border: 1px solid var(--border);
+    border-radius: 4px; padding: 6px 12px; cursor: pointer; font-size: 13px; }
+  button.small.active { border-color: var(--accent); color: var(--accent-hover); }
+  .stage { display: inline-block; background: var(--checker); border: 1px solid var(--border); border-radius: 4px; }
+  canvas { display: block; image-rendering: pixelated; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 4px; }
+  .swatch { width: 22px; height: 22px; border-radius: 3px; border: 1px solid #0006; cursor: pointer; padding: 0; }
+  .swatch.active { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .palette-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; margin-bottom: 10px;
+    background: var(--bg-panel); cursor: pointer; }
+  .palette-card.active { border-color: var(--accent); }
+  .palette-card .name { font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .palette-card .name small { color: var(--text-dim); font-weight: 400; }
+  .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .hint { color: var(--text-dim); font-size: 12px; margin-top: 10px; }
+  .batch { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+  .batch .stage { cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="title">Pixel<span>Forge</span> AI</div>
+  <nav id="nav">
+    <button data-view="generate" class="active">Generate</button>
+    <button data-view="editor">Editor</button>
+    <button data-view="palettes">Palettes</button>
+  </nav>
+  <div class="badge">standalone · no backend</div>
+</header>
+<main>
+  <aside id="sidebar"></aside>
+  <section id="content"></section>
+</main>
+
+<script>
+"use strict";
+
+/* ---------- seeded RNG + hashing (deterministic) ---------- */
+function hashString(s) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ---------- palettes (embedded) ---------- */
+const PALETTES = [
+  { id: "sweetie16", name: "Sweetie 16", colors: ["#1a1c2c","#5d275d","#b13e53","#ef7d57","#ffcd75","#a7f070","#38b764","#257179","#29366f","#3b5dc9","#41a6f6","#73eff7","#f4f4f4","#94b0c2","#566c86","#333c57"] },
+  { id: "pico8", name: "PICO-8", colors: ["#000000","#1D2B53","#7E2553","#008751","#AB5236","#5F574F","#C2C3C7","#FFF1E8","#FF004D","#FFA300","#FFEC27","#00E436","#29ADFF","#83769C","#FF77A8","#FFCCAA"] },
+  { id: "gameboy", name: "Game Boy", colors: ["#0f380f","#306230","#8bac0f","#9bbc0f"] },
+  { id: "nes", name: "NES-ish", colors: ["#0d0d0d","#3b1f7a","#1846c9","#008751","#a83232","#d97a20","#e0c020","#8bd44a","#6fd0f0","#c8c8d0","#f8f8f8"] },
+  { id: "cga", name: "CGA", colors: ["#000000","#55ffff","#ff55ff","#ffffff"] },
+  { id: "grayscale", name: "Grayscale", colors: ["#141414","#3a3a3a","#5f5f5f","#8a8a8a","#b6b6b6","#e8e8e8"] },
+];
+
+/* ---------- color helpers ---------- */
+function hexToRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function rgbToHex(r, g, b) { return "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join(""); }
+function luminance(h) { const [r, g, b] = hexToRgb(h); return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
+function rampOf(colors) { return colors.slice().sort((a, b) => luminance(a) - luminance(b)); }
+
+/* ---------- procedural sprite generator (deterministic) ---------- */
+// Returns a size×size array of hex strings or null (transparent).
+function generateSprite(prompt, size, seed, colors, symmetry) {
+  const rng = mulberry32((hashString(prompt || "sprite") ^ (seed >>> 0)) >>> 0);
+  const W = size, H = size, halfW = Math.ceil(W / 2);
+  let grid = Array.from({ length: H }, () => new Array(W).fill(0));
+
+  // Radial-biased random fill on the left half (denser near centre, empty at the margin).
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < halfW; x++) {
+      const dx = x / (W - 1) - 0.5, dy = y / (H - 1) - 0.5;
+      const dist = Math.sqrt(dx * dx * 1.15 + dy * dy);
+      grid[y][x] = rng() < 0.62 - dist * 0.95 ? 1 : 0;
+    }
+  }
+  // Cellular smoothing → coherent blobs; keep a 1px border margin.
+  for (let it = 0; it < 3; it++) {
+    const ng = grid.map(r => r.slice());
+    for (let y = 0; y < H; y++) for (let x = 0; x < halfW; x++) {
+      if (x === 0 || y === 0 || y === H - 1) { ng[y][x] = 0; continue; }
+      let n = 0;
+      for (let yy = -1; yy <= 1; yy++) for (let xx = -1; xx <= 1; xx++) {
+        const Y = y + yy, X = x + xx;
+        if (Y < 0 || Y >= H || X < 0) continue;
+        n += X < halfW ? grid[Y][X] : 0;
+      }
+      ng[y][x] = n >= (it < 2 ? 5 : 4) ? 1 : n <= 2 ? 0 : grid[y][x];
+    }
+    grid = ng;
+  }
+  // Optional asymmetry: perturb the right half a little before mirroring.
+  for (let y = 0; y < H; y++) for (let x = 0; x < halfW; x++) {
+    let v = grid[y][x];
+    if (!symmetry && x > 1 && x < halfW - 1 && rng() < 0.06) v ^= 1;
+    grid[y][W - 1 - x] = v;
+  }
+
+  // Shade with the palette ramp; add a dark 1px outline around the silhouette.
+  const ramp = rampOf(colors);
+  const dark = ramp[0];
+  const px = Array.from({ length: H }, () => new Array(W).fill(null));
+  const filled = (x, y) => x >= 0 && x < W && y >= 0 && y < H && grid[y][x] === 1;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (grid[y][x] === 1) {
+      const light = 1 - ((x / (W - 1)) + (y / (H - 1))) / 2; // lit from the top-left
+      const edge = !(filled(x - 1, y) && filled(x + 1, y) && filled(x, y - 1) && filled(x, y + 1));
+      let idx = Math.round(light * (ramp.length - 2)) + 1;
+      if (edge) idx = Math.max(1, idx - 1); // darker rim just inside the outline
+      px[y][x] = ramp[Math.min(ramp.length - 1, Math.max(1, idx))];
+    } else if (filled(x - 1, y) || filled(x + 1, y) || filled(x, y - 1) || filled(x, y + 1)
+      || filled(x - 1, y - 1) || filled(x + 1, y - 1) || filled(x - 1, y + 1) || filled(x + 1, y + 1)) {
+      px[y][x] = dark; // outline
+    }
+  }
+  return px;
+}
+
+/* ---------- rendering ---------- */
+function drawGrid(canvas, px, scale) {
+  const H = px.length, W = px[0].length;
+  canvas.width = W * scale; canvas.height = H * scale;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (px[y][x]) { ctx.fillStyle = px[y][x]; ctx.fillRect(x * scale, y * scale, scale, scale); }
+  }
+}
+function exportPng(px, scale, name) {
+  const H = px.length, W = px[0].length;
+  const c = document.createElement("canvas");
+  c.width = W * scale; c.height = H * scale;
+  const ctx = c.getContext("2d");
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    if (px[y][x]) { ctx.fillStyle = px[y][x]; ctx.fillRect(x * scale, y * scale, scale, scale); }
+  }
+  c.toBlob(blob => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = name; a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+/* ---------- app state ---------- */
+const state = {
+  view: "generate",
+  paletteId: "sweetie16",
+  activeColor: "#ffcd75",
+  gen: { prompt: "a brave knight", size: 32, seed: 42, symmetry: true, batch: 1, results: [] },
+  editor: { px: null, tool: "pencil", scale: 16, undo: [] },
+};
+const palette = () => PALETTES.find(p => p.id === state.paletteId) || PALETTES[0];
+const sidebar = document.getElementById("sidebar");
+const content = document.getElementById("content");
+
+/* ---------- Generate view ---------- */
+function renderGenerate() {
+  const g = state.gen;
+  sidebar.innerHTML = `
+    <h2>Generate</h2>
+    <div class="field"><label>Prompt</label><textarea id="g-prompt">${g.prompt}</textarea></div>
+    <div class="row">
+      <div class="field"><label>Size</label><select id="g-size">${[16,24,32,48,64].map(s=>`<option ${s===g.size?"selected":""}>${s}</option>`).join("")}</select></div>
+      <div class="field"><label>Seed</label><input id="g-seed" value="${g.seed}" /></div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Batch</label><input id="g-batch" type="number" min="1" max="8" value="${g.batch}" /></div>
+      <div class="field"><label>Palette</label><select id="g-pal">${PALETTES.map(p=>`<option value="${p.id}" ${p.id===state.paletteId?"selected":""}>${p.name}</option>`).join("")}</select></div>
+    </div>
+    <div class="field"><label><input type="checkbox" id="g-sym" ${g.symmetry?"checked":""}/> Symmetry</label></div>
+    <button class="primary" id="g-go">Generate</button>
+    <p class="hint">Deterministic: same prompt + seed + palette → the same sprite. Click a result to open it in the editor.</p>
+  `;
+  content.innerHTML = `<div id="g-out" class="batch"></div>`;
+  const out = document.getElementById("g-out");
+  const draw = () => {
+    out.innerHTML = "";
+    g.results.forEach((px, i) => {
+      const wrap = document.createElement("div"); wrap.className = "stage";
+      const cv = document.createElement("canvas"); drawGrid(cv, px, Math.max(4, Math.floor(320 / px.length)));
+      wrap.title = "click to edit · double-click to download PNG";
+      wrap.appendChild(cv);
+      wrap.onclick = () => { openInEditor(px); };
+      wrap.ondblclick = (e) => { e.stopPropagation(); exportPng(px, 8, `${sanitize(g.prompt)}_${i}.png`); };
+      out.appendChild(wrap);
+    });
+    if (!g.results.length) out.innerHTML = `<p class="hint">Press Generate to forge some sprites.</p>`;
+  };
+  const run = () => {
+    g.prompt = document.getElementById("g-prompt").value;
+    g.size = +document.getElementById("g-size").value;
+    g.seed = parseInt(document.getElementById("g-seed").value, 10) || 0;
+    g.batch = Math.min(8, Math.max(1, +document.getElementById("g-batch").value || 1));
+    g.symmetry = document.getElementById("g-sym").checked;
+    state.paletteId = document.getElementById("g-pal").value;
+    g.results = [];
+    for (let i = 0; i < g.batch; i++) g.results.push(generateSprite(g.prompt, g.size, g.seed + i, palette().colors, g.symmetry));
+    draw();
+  };
+  document.getElementById("g-go").onclick = run;
+  document.getElementById("g-pal").onchange = (e) => { state.paletteId = e.target.value; };
+  draw();
+  if (!g.results.length) run();
+}
+
+/* ---------- Editor view ---------- */
+function openInEditor(px) {
+  state.editor.px = px.map(r => r.slice());
+  state.editor.undo = [];
+  state.view = "editor"; setActiveNav(); renderEditor();
+}
+function renderEditor() {
+  const e = state.editor;
+  if (!e.px) { const s = state.gen.size; e.px = Array.from({ length: s }, () => new Array(s).fill(null)); }
+  const tools = ["pencil", "eraser", "fill", "pick"];
+  sidebar.innerHTML = `
+    <h2>Editor</h2>
+    <div class="toolbar">${tools.map(t=>`<button class="small ${e.tool===t?"active":""}" data-tool="${t}">${t}</button>`).join("")}</div>
+    <button class="small" id="e-undo">Undo</button>
+    <button class="small" id="e-clear">Clear</button>
+    <h4>Color</h4>
+    <div class="field"><input type="color" id="e-color" value="${state.activeColor}" /></div>
+    <div class="swatches" id="e-swatches">${palette().colors.map(c=>`<button class="swatch ${c===state.activeColor?"active":""}" style="background:${c}" data-c="${c}"></button>`).join("")}</div>
+    <h4>Export</h4>
+    <div class="row"><div class="field"><label>Scale</label><select id="e-scale">${[1,2,4,8,16].map(s=>`<option ${s===8?"selected":""}>${s}</option>`).join("")}</select></div></div>
+    <button class="primary" id="e-export">Download PNG</button>
+  `;
+  content.innerHTML = `<div class="stage"><canvas id="e-canvas"></canvas></div><p class="hint">Left-drag to paint. Tools: pencil / eraser / fill (flood) / pick (eyedropper).</p>`;
+  const canvas = document.getElementById("e-canvas");
+  const redraw = () => drawGrid(canvas, e.px, e.scale);
+  redraw();
+
+  const cellAt = (ev) => {
+    const r = canvas.getBoundingClientRect();
+    const x = Math.floor((ev.clientX - r.left) / e.scale), y = Math.floor((ev.clientY - r.top) / e.scale);
+    return [x, y];
+  };
+  const apply = (x, y) => {
+    if (x < 0 || y < 0 || y >= e.px.length || x >= e.px[0].length) return;
+    if (e.tool === "pencil") e.px[y][x] = state.activeColor;
+    else if (e.tool === "eraser") e.px[y][x] = null;
+    else if (e.tool === "pick") { if (e.px[y][x]) { state.activeColor = e.px[y][x]; renderEditor(); } return; }
+    else if (e.tool === "fill") floodFill(e.px, x, y, state.activeColor);
+    redraw();
+  };
+  let painting = false;
+  canvas.onpointerdown = (ev) => { e.undo.push(e.px.map(r => r.slice())); if (e.undo.length > 40) e.undo.shift(); painting = true; const [x, y] = cellAt(ev); apply(x, y); };
+  canvas.onpointermove = (ev) => { if (!painting) return; const [x, y] = cellAt(ev); apply(x, y); };
+  window.addEventListener("pointerup", () => { painting = false; });
+
+  sidebar.querySelectorAll("[data-tool]").forEach(b => b.onclick = () => { e.tool = b.dataset.tool; renderEditor(); });
+  sidebar.querySelectorAll("[data-c]").forEach(b => b.onclick = () => { state.activeColor = b.dataset.c; renderEditor(); });
+  document.getElementById("e-color").oninput = (ev) => { state.activeColor = ev.target.value; };
+  document.getElementById("e-undo").onclick = () => { if (e.undo.length) { e.px = e.undo.pop(); redraw(); } };
+  document.getElementById("e-clear").onclick = () => { e.undo.push(e.px.map(r => r.slice())); e.px = e.px.map(r => r.map(() => null)); redraw(); };
+  document.getElementById("e-export").onclick = () => exportPng(e.px, +document.getElementById("e-scale").value, "pixelforge_edit.png");
+}
+function floodFill(px, x, y, color) {
+  const target = px[y][x];
+  if (target === color) return;
+  const H = px.length, W = px[0].length, stack = [[x, y]];
+  while (stack.length) {
+    const [cx, cy] = stack.pop();
+    if (cx < 0 || cy < 0 || cx >= W || cy >= H || px[cy][cx] !== target) continue;
+    px[cy][cx] = color;
+    stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+  }
+}
+
+/* ---------- Palettes view ---------- */
+function renderPalettes() {
+  sidebar.innerHTML = `<h2>Palettes</h2><p class="hint">Pick the active palette. It drives generation and the editor swatches.</p>`;
+  content.innerHTML = PALETTES.map(p => `
+    <div class="palette-card ${p.id===state.paletteId?"active":""}" data-id="${p.id}">
+      <div class="name">${p.name} <small>${p.colors.length} colors</small></div>
+      <div class="swatches">${p.colors.map(c=>`<span class="swatch" style="background:${c}"></span>`).join("")}</div>
+    </div>`).join("");
+  content.querySelectorAll("[data-id]").forEach(card => card.onclick = () => {
+    state.paletteId = card.dataset.id;
+    const first = palette().colors.slice().sort((a,b)=>luminance(b)-luminance(a))[0];
+    state.activeColor = first;
+    renderPalettes();
+  });
+}
+
+/* ---------- shell ---------- */
+function sanitize(s) { return (s || "sprite").trim().replace(/\W+/g, "_").slice(0, 40) || "sprite"; }
+function setActiveNav() {
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
+}
+function render() {
+  if (state.view === "generate") renderGenerate();
+  else if (state.view === "editor") renderEditor();
+  else renderPalettes();
+}
+document.getElementById("nav").addEventListener("click", (ev) => {
+  const b = ev.target.closest("button"); if (!b) return;
+  state.view = b.dataset.view; setActiveNav(); render();
+});
+render();
+</script>
+</body>
+</html>

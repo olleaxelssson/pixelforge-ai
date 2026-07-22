@@ -1,0 +1,29 @@
+{
+  "name": "pixelforge-standalone",
+  "version": "1.0.0",
+  "description": "PixelForge AI — standalone pixel-art studio (client-only, no backend)",
+  "main": "main.js",
+  "author": "PixelForge",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "ai.pixelforge.standalone",
+    "productName": "PixelForge",
+    "files": ["main.js", "pixelforge.html"],
+    "directories": { "output": "dist" },
+    "linux": {
+      "target": ["dir", "tar.gz", "AppImage"],
+      "category": "Graphics"
+    },
+    "win": {
+      "target": ["zip"]
+    }
+  }
+}
