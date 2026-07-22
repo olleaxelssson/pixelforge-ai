@@ -5,6 +5,7 @@ import type {
   AnimationResult,
   Character,
   CharacterIdentity,
+  DatasetReport,
   DriftResult,
   GenerationMode,
   GenerationRequest,
@@ -79,6 +80,11 @@ export const api = {
     }),
 
   plugins: () => request<PluginReport>("/api/plugins"),
+
+  analyzeDataset: (body: {
+    images: { name: string; image_base64: string }[];
+    dup_distance?: number;
+  }) => request<DatasetReport>("/api/dataset", { method: "POST", body: JSON.stringify(body) }),
 
   animationActions: () => request<AnimationAction[]>("/api/animation/actions"),
   animate: (body: {

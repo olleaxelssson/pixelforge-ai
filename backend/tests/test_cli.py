@@ -87,6 +87,41 @@ def test_unknown_palette_fails_cleanly(tmp_path: Path, capsys: pytest.CaptureFix
     assert "unknown palette" in capsys.readouterr().err
 
 
+def _patterned(seed: int, size: int = 32) -> Image.Image:
+    """A sprite with internal structure — flat colors all collapse to the same perceptual hash."""
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    arr = rng.integers(0, 255, (size, size, 4), dtype=np.uint8)
+    arr[..., 3] = 255
+    return Image.fromarray(arr, "RGBA")
+
+
+def test_dataset_build(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    sprites = tmp_path / "sprites"
+    sprites.mkdir()
+    _patterned(1).save(sprites / "a.png")
+    _patterned(1).save(sprites / "a_copy.png")  # identical pixels → duplicate
+    _patterned(99).save(sprites / "b.png")  # distinct
+    (sprites / "broken.png").write_bytes(b"not a png")
+    out = tmp_path / "out"
+    code = main(["dataset", "build", str(sprites), "-o", str(out)])
+    assert code == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["total"] == 4
+    assert report["invalid_count"] == 1  # broken.png
+    assert report["duplicate_count"] == 1  # a_copy.png
+    assert report["lora_config"]["image_count"] == 2
+    assert (out / "manifest.jsonl").exists()
+    assert (out / "lora_config.json").exists()
+
+
+def test_dataset_build_rejects_missing_dir(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["dataset", "build", str(tmp_path / "nope")]) == 2
+
+
 def test_list_and_system(capsys: pytest.CaptureFixture[str]) -> None:
     for what in ("modes", "styles", "palettes", "export-formats", "backends"):
         assert main(["list", what]) == 0

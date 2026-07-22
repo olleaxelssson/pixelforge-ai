@@ -15,6 +15,7 @@ from pixelforge.api.routers import (
     animation,
     catalog,
     characters,
+    dataset,
     export,
     generation,
     palettes,
@@ -57,6 +58,7 @@ app.include_router(qa.router)
 app.include_router(characters.router)
 app.include_router(animation.router)
 app.include_router(plugins.router)
+app.include_router(dataset.router)
 
 
 @app.get("/api/health")

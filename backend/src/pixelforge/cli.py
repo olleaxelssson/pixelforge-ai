@@ -29,6 +29,8 @@ from pixelforge.agents.runtime import PlanningRuntime
 from pixelforge.config import get_settings
 from pixelforge.core.errors import UnknownRegistryKeyError
 from pixelforge.core.models import DitherMode, GenerationRequest
+from pixelforge.dataset.builder import build_dataset, scan_directory
+from pixelforge.dataset.phash import DEFAULT_DUP_DISTANCE
 from pixelforge.exporters.base import ExportAsset, ExportOptions
 from pixelforge.exporters.registry import get_exporter, list_exporters
 from pixelforge.generation.backends.registry import list_backends
@@ -196,6 +198,22 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     bench.add_argument("--backend", default=None, help="Override backend (mock|flux-schnell|auto)")
     bench.add_argument("-o", "--output", default=None, help="Write the JSON report to this path")
+
+    ds = sub.add_parser("dataset", help="Build a LoRA training dataset from a folder of sprites")
+    ds_sub = ds.add_subparsers(dest="dataset_command", required=True)
+    ds_build = ds_sub.add_parser(
+        "build", help="Validate, dedup, caption, and emit a training manifest + LoRA config"
+    )
+    ds_build.add_argument("directory", help="Folder of sprite images (scanned recursively)")
+    ds_build.add_argument(
+        "--dup-distance",
+        type=int,
+        default=DEFAULT_DUP_DISTANCE,
+        help="Max Hamming distance (of 64) for near-duplicates",
+    )
+    ds_build.add_argument(
+        "-o", "--output-dir", default=None, help="Write manifest.jsonl + lora_config.json here"
+    )
 
     sub.add_parser("system", help="Show device/backend availability as JSON")
     return parser
@@ -547,6 +565,20 @@ def _cmd_list(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_dataset(args: argparse.Namespace) -> int:
+    directory = Path(args.directory)
+    if not directory.is_dir():
+        print(f"error: not a directory: {directory}", file=sys.stderr)
+        return 2
+    inputs = scan_directory(directory)
+    out_dir = Path(args.output_dir) if args.output_dir else None
+    report = build_dataset(
+        inputs, root=str(directory), out_dir=out_dir, dup_distance=max(0, args.dup_distance)
+    )
+    print(json.dumps(report.model_dump(), indent=2))
+    return 0
+
+
 def _cmd_system(_: argparse.Namespace) -> int:
     settings = get_settings()
     print(
@@ -574,6 +606,7 @@ def main(argv: list[str] | None = None) -> int:
         "animate": _cmd_animate,
         "character": _cmd_character,
         "export": _cmd_export,
+        "dataset": _cmd_dataset,
         "list": _cmd_list,
         "system": _cmd_system,
     }

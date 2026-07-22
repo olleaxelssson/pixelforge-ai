@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { AnimationPanel } from "../features/animation/AnimationPanel";
 import { CharactersPanel } from "../features/characters/CharactersPanel";
+import { DatasetPanel } from "../features/dataset/DatasetPanel";
 import { EditorPanel } from "../features/editor/EditorPanel";
 import { GenerationPanel } from "../features/generation/GenerationPanel";
 import { ResultsPanel } from "../features/generation/ResultsPanel";
@@ -9,7 +10,7 @@ import { PalettePanel } from "../features/palettes/PalettePanel";
 import { QAPanel } from "../features/qa/QAPanel";
 import { useGenerationStore } from "../state/generationStore";
 
-type View = "generate" | "editor" | "animation" | "qa" | "characters" | "palettes";
+type View = "generate" | "editor" | "animation" | "qa" | "characters" | "palettes" | "dataset";
 
 const VIEWS: { id: View; label: string }[] = [
   { id: "generate", label: "Generate" },
@@ -18,6 +19,7 @@ const VIEWS: { id: View; label: string }[] = [
   { id: "qa", label: "QA" },
   { id: "characters", label: "Characters" },
   { id: "palettes", label: "Palette Lab" },
+  { id: "dataset", label: "Dataset" },
 ];
 
 export function App() {
@@ -67,6 +69,7 @@ export function App() {
         {view === "qa" && <QAPanel />}
         {view === "characters" && <CharactersPanel />}
         {view === "palettes" && <PalettePanel />}
+        {view === "dataset" && <DatasetPanel />}
       </main>
     </div>
   );

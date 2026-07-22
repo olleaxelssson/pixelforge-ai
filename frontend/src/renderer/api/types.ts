@@ -325,6 +325,55 @@ export interface DriftResult {
   consistent: boolean;
 }
 
+// --- Dataset & LoRA-training toolkit (M4/M21) ---
+
+export interface DatasetItem {
+  name: string;
+  valid: boolean;
+  width: number;
+  height: number;
+  issues: string[];
+  phash: string;
+  caption: string;
+  tags: string[];
+  duplicate_of: string | null;
+}
+
+export interface DuplicateCluster {
+  representative: string;
+  members: string[];
+  distance: number;
+}
+
+export interface LoraConfig {
+  base_model: string;
+  resolution: number;
+  network_dim: number;
+  network_alpha: number;
+  learning_rate: number;
+  train_batch_size: number;
+  max_train_epochs: number;
+  optimizer: string;
+  lr_scheduler: string;
+  mixed_precision: string;
+  trigger_word: string;
+  image_count: number;
+}
+
+export interface DatasetReport {
+  root: string;
+  total: number;
+  valid_count: number;
+  invalid_count: number;
+  duplicate_count: number;
+  items: DatasetItem[];
+  clusters: DuplicateCluster[];
+  lora_config: LoraConfig;
+  manifest: Record<string, unknown>[];
+  manifest_path: string | null;
+  config_path: string | null;
+}
+
 // --- Plugin SDK (D-014) ---
 
 export interface PluginManifest {

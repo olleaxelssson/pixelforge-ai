@@ -1113,3 +1113,118 @@ body {
   font-size: 11px;
   color: var(--accent);
 }
+
+/* --- Dataset tab (M21) --- */
+.dataset-view {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dataset-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dataset-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 78px;
+  padding: 10px 14px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.dataset-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dataset-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dataset-block h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.dataset-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.dataset-table th,
+.dataset-table td {
+  text-align: left;
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.dataset-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+.dataset-row.invalid td {
+  color: var(--text-dim);
+}
+
+.dataset-badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dataset-badge.trainable {
+  background: rgba(76, 175, 125, 0.18);
+  color: var(--success);
+}
+
+.dataset-badge.duplicate {
+  background: rgba(228, 99, 42, 0.18);
+  color: var(--accent-hover);
+}
+
+.dataset-badge.invalid {
+  background: rgba(216, 76, 76, 0.18);
+  color: var(--danger);
+}
+
+.dataset-clusters {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.dataset-code {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 240px;
+  overflow: auto;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre;
+}

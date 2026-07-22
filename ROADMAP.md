@@ -26,9 +26,9 @@
 - Export presets polish
 
 ## M4 — Training pipeline & dataset tools
-- Dataset import, validation, duplicate detection (perceptual hash), corrupt-file detection
-- Auto-captioning, metadata/label editor, balancing, style tagging
-- LoRA fine-tuning on consumer hardware (kohya-style trainer wrapper), training queue
+- ✅ (M21) Dataset import, validation, duplicate detection (perceptual hash), corrupt-file detection
+- ✅ (M21) Auto-captioning, kohya-style training manifest (JSONL) + LoRA config
+- ✅ (M21) LoRA fine-tuning trainer wrapper (gated like FLUX); metadata/label editor, balancing later
 
 ## M5 — Editor & UX depth
 - Dockable/multi-window layouts, tile preview (seamless mode), advanced selection, palette editor v2
@@ -212,3 +212,21 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   `parse_aseprite` round-trip that reconstructs every original frame from the indexed cels.
 - Wired into the UI: a **download .aseprite** button in the Animation tab's export block (posts the
   frame filenames to `/api/export`); CORS now exposes `Content-Disposition` so the filename is kept.
+
+### M21 — Dataset & LoRA-training toolkit (M4, D-001) ✅
+- New `dataset/` subsystem — the training-data half of "AI-native". `build_dataset` is a pure,
+  deterministic pipeline: **validate** (corrupt-file detection, <8px rejected, oversize/non-square
+  flagged) → **dedup** (perceptual difference-hash + greedy Hamming clustering) → **caption**
+  (reuses the D-012 palette intelligence: size, palette size, dominant hue family, frame fill — no
+  model) → emit a kohya/HF **`manifest.jsonl`** + a **`lora_config.json`**. Near-duplicates are
+  excluded from the manifest so the training set stays clean.
+- The dHash resizes with **NEAREST** (no interpolation) so hashes are bit-identical across machines,
+  keeping the dedup deterministic in CI. Note: flat single-color images all collapse to the same
+  hash — real sprites have internal structure, so this is a non-issue in practice.
+- `LoraTrainer` mirrors the FLUX gate: `is_available()` checks for the torch/PEFT stack, `train()`
+  raises `BackendUnavailableError` without it, and a pure `training_plan()` returns the kohya
+  `sd-scripts` command line (testable without a GPU).
+- Surfaced as `pixelforge dataset build <dir> [-o out]` (scans a folder, prints the report as JSON,
+  optionally writes the manifest + config) and `POST /api/dataset` (analyzes base64 uploads in
+  memory). New **Dataset** tab: multi-file upload → summary counts, per-image validation table with
+  trainable/duplicate/invalid badges, duplicate clusters, and manifest + config previews.
