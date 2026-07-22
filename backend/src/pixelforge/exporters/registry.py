@@ -6,12 +6,14 @@ from pixelforge.core.errors import UnknownRegistryKeyError
 from pixelforge.exporters.aseprite import AsepriteExporter
 from pixelforge.exporters.base import Exporter
 from pixelforge.exporters.engines import GodotExporter, UnityExporter, UnrealExporter
+from pixelforge.exporters.godot_tileset import GodotTilesetExporter
 from pixelforge.exporters.standard import (
     GifExporter,
     PngExporter,
     SpriteSheetExporter,
     TextureAtlasExporter,
 )
+from pixelforge.exporters.tiled_tileset import TiledTilesetExporter
 from pixelforge.exporters.wang_blob import WangBlobExporter
 
 _EXPORTERS: dict[str, Exporter] = {}
@@ -29,6 +31,8 @@ def _ensure_registered() -> None:
             UnrealExporter(),
             AsepriteExporter(),
             WangBlobExporter(),
+            GodotTilesetExporter(),
+            TiledTilesetExporter(),
         ):
             _EXPORTERS[exporter.format_id] = exporter
 

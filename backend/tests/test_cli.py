@@ -118,6 +118,17 @@ def test_export_wang_blob(tmp_path: Path, capsys: pytest.CaptureFixture[str]) ->
     assert all(Path(p).exists() for p in payload["files"])
 
 
+def test_export_engine_tilesets(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    tile = tmp_path / "grass.png"
+    Image.new("RGBA", (16, 16), (120, 180, 90, 255)).save(tile)
+    for fmt, suffix in (("godot-tileset", ".tres"), ("tiled-tileset", ".tsx")):
+        out = tmp_path / fmt
+        assert main(["export", str(tile), "--format", fmt, "-o", str(out)]) == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert any(p.endswith(suffix) for p in payload["files"])
+        assert all(Path(p).exists() for p in payload["files"])
+
+
 def test_export_spritesheet(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     frame = tmp_path / "frame.png"
     Image.new("RGBA", (16, 16), (255, 0, 0, 255)).save(frame)

@@ -33,6 +33,7 @@
 ## M5 — Editor & UX depth
 - ✅ (M22) Seamless tiling (seam-blend) + live tiling preview; Wang/blob auto-tile export
 - ✅ (M23) Tileset generation mode: coherent seam-locked terrain families + paintable preview
+- ✅ (M24) Godot 4 `.tres` + Tiled `.tsx`/`.tmx` tileset export (autotiling metadata baked in)
 - Dockable/multi-window layouts, advanced selection, palette editor v2
 - Autosave/session recovery hardening, project templates
 - ✅ (M20) Aseprite-compatible export (.aseprite writer)
@@ -269,3 +270,21 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   **Tileset** tab: generate a set, pick a variant brush, and paint an N×N grid that renders the
   tiles edge-to-edge as one continuous surface, with a coherence badge and the blob sheet. Pure
   `tilesetView.ts` unit-tested; browser E2E confirmed a "100% · tiles abut cleanly" set.
+
+### M24 — Godot & Tiled tileset export (M5, D-001) ✅
+- Turns an M23 terrain family (or any base tile) into **drop-in engine assets**. A shared
+  `exporters/wang_blob.build_blob_sheet` assembles the 47-tile sheet once; two new exporters read
+  the same cells so the metadata always matches the pixels.
+- **`exporters/godot_tileset.py`** (`godot-tileset`) — a Godot 4 **`.tres`** TileSet: one
+  `TileSetAtlasSource` over the sheet, and for every tile the terrain-set + **peering-bit** metadata
+  derived from the blob bitmask (each set neighbour bit → the Godot peering bit for that direction,
+  match-corners-and-sides mode). Godot's terrain autotiling "just works" on import.
+- **`exporters/tiled_tileset.py`** (`tiled-tileset`) — a Tiled **`.tsx`** whose `<wangset>` encodes
+  the terrain (one `<wangtile>` per tile, `wangid` in Tiled's top/top-right/…/top-left order from
+  the same masks) plus a small **`.tmx`** sample map that auto-tiles a solid terrain patch so the
+  wangset is demonstrable on open.
+- Both are pure, deterministic text/XML serializers registered into the exporter registry and
+  **validated by parsing the output back** (regex for the `.tres`, ElementTree for the `.tsx`/`.tmx`)
+  — no engine needed. Surfaced as `pixelforge export --format godot-tileset|tiled-tileset` and, in
+  the Tileset tab, an **Export for a game engine** block that downloads each as a zip. Browser E2E
+  confirmed the Godot zip contains `*_blob.png` + `*.tres`.

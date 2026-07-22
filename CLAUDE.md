@@ -33,7 +33,7 @@ cd backend
     --palette 8bit-console --dither ordered -o /tmp/sprites
 .venv/bin/pixelforge generate "mossy stone floor" --mode tileset --tileable -o /tmp/sprites  # seam-blended, tiles seamlessly
 .venv/bin/pixelforge tileset "grass field" --variants 4 --seed 5 -o /tmp/tiles  # coherent seam-locked terrain family + 47-tile blob sheet
-.venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export   # also: aseprite, wang-blob, gif, sprite-sheet, godot, unreal, texture-atlas
+.venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export   # also: aseprite, wang-blob, godot-tileset, tiled-tileset, gif, sprite-sheet, godot, unreal, texture-atlas
 .venv/bin/pixelforge plan "a knight with a flaming sword" --mode character   # Scene Graph, no image
 .venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
 .venv/bin/pixelforge qa sprite.png --repair -o fixed.png  # detect defects; --repair applies safe fixes
@@ -73,7 +73,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 ## Code map
 
 - `backend/src/pixelforge/generation/pipeline.py` — 4-stage pipeline (diffusion → pixelize → palette → cleanup)
-- `backend/src/pixelforge/generation/tileize.py` — seamless tiling (M22): pure wrap-aware seam-blend `make_tileable` + `seam_metrics`/`seam_score`; applied before quantization when `request.tileable`. Seam QA in `qa/detectors/seam.py`; 47-tile `wang-blob` exporter in `exporters/wang_blob.py`. `pixelforge generate --tileable`, `pixelforge export --format wang-blob`
+- `backend/src/pixelforge/generation/tileize.py` — seamless tiling (M22): pure wrap-aware seam-blend `make_tileable` + `seam_metrics`/`seam_score`; applied before quantization when `request.tileable`. Seam QA in `qa/detectors/seam.py`; 47-tile `wang-blob` exporter in `exporters/wang_blob.py` (shared `build_blob_sheet`). Engine tilesets (M24): `exporters/godot_tileset.py` (`godot-tileset` → Godot 4 `.tres` with terrain peering bits) + `exporters/tiled_tileset.py` (`tiled-tileset` → `.tsx` wangset + sample `.tmx`), both from the blob masks. `pixelforge generate --tileable`, `pixelforge export --format wang-blob|godot-tileset|tiled-tileset`
 - `backend/src/pixelforge/generation/backends/` — `mock.py`, `flux.py` (M2: fp8/offload/ControlNet, decisions in torch-free `flux_config.py`); register new models in `registry.py`
 - `backend/src/pixelforge/generation/benchmark.py` — benchmark suite (M2): times + QA-scores generations; `pixelforge benchmark`. Golden-image regression in `backend/tests/golden/` (`PIXELFORGE_UPDATE_GOLDEN=1` to refresh)
 - `backend/src/pixelforge/core/scene_graph.py` — the `SceneGraph` (D-009): structured, typed plan for one generation

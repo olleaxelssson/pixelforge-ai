@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 
-import { api } from "../../api/client";
+import { api, downloadExport } from "../../api/client";
 import type { TileSetResult } from "../../api/types";
 import { useGenerationStore } from "../../state/generationStore";
 import { coherenceBadge, createGrid, paintCell } from "./tilesetView";
@@ -205,6 +205,40 @@ export function TilesetPanel() {
                   download 47-tile Wang/blob sheet
                 </a>
               </div>
+            </div>
+
+            <div className="tileset-block">
+              <h4>Export for a game engine</h4>
+              <div className="tileset-export">
+                <button
+                  className="link-button"
+                  onClick={() =>
+                    void downloadExport({
+                      format_id: "godot-tileset",
+                      filenames: result.tiles.map((t) => t.filename),
+                      options: { base_name: result.prompt.replace(/\W+/g, "_") || "tileset" },
+                    })
+                  }
+                >
+                  download Godot 4 TileSet (.tres)
+                </button>
+                <button
+                  className="link-button"
+                  onClick={() =>
+                    void downloadExport({
+                      format_id: "tiled-tileset",
+                      filenames: result.tiles.map((t) => t.filename),
+                      options: { base_name: result.prompt.replace(/\W+/g, "_") || "tileset" },
+                    })
+                  }
+                >
+                  download Tiled tileset (.tsx + .tmx)
+                </button>
+              </div>
+              <p style={{ color: "var(--text-dim)", fontSize: 12 }}>
+                Terrain peering bits / wangsets are baked from the 47-blob masks, so autotiling works
+                on import.
+              </p>
             </div>
           </div>
         )}
