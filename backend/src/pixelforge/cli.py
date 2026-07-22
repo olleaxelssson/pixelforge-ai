@@ -27,7 +27,7 @@ from pixelforge.agents.planning_backends.registry import (
 )
 from pixelforge.agents.runtime import PlanningRuntime
 from pixelforge.config import get_settings
-from pixelforge.core.errors import UnknownRegistryKeyError
+from pixelforge.core.errors import PixelForgeError, UnknownRegistryKeyError
 from pixelforge.core.models import DitherMode, GenerationRequest
 from pixelforge.dataset.builder import build_dataset, scan_directory
 from pixelforge.dataset.phash import DEFAULT_DUP_DISTANCE
@@ -217,6 +217,18 @@ def _build_parser() -> argparse.ArgumentParser:
     tset.add_argument("--palette", default=None, help="Palette id to lock (see: list palettes)")
     tset.add_argument("--max-colors", type=int, default=16)
     tset.add_argument("-o", "--output-dir", default=".", help="Directory for tiles + blob sheet")
+
+    proj = sub.add_parser("project", help="Save/load/inspect a portable .pforge project bundle")
+    proj_sub = proj.add_subparsers(dest="project_command", required=True)
+    proj_save = proj_sub.add_parser("save", help="Bundle a folder of sprites into a .pforge file")
+    proj_save.add_argument("file", help="Output .pforge path")
+    proj_save.add_argument("--sprites", required=True, help="Folder of PNG sprites to bundle")
+    proj_save.add_argument("--name", default="Untitled Project", help="Project name")
+    proj_load = proj_sub.add_parser("load", help="Extract a .pforge file's manifest + sprites")
+    proj_load.add_argument("file", help="Input .pforge path")
+    proj_load.add_argument("-o", "--output-dir", required=True, help="Directory to extract into")
+    proj_info = proj_sub.add_parser("info", help="Print a .pforge file's manifest summary")
+    proj_info.add_argument("file", help="Input .pforge path")
 
     ds = sub.add_parser("dataset", help="Build a LoRA training dataset from a folder of sprites")
     ds_sub = ds.add_subparsers(dest="dataset_command", required=True)
@@ -626,6 +638,40 @@ def _cmd_tileset(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_project(args: argparse.Namespace) -> int:
+    from pixelforge.projects.bundle import (
+        ProjectBundle,
+        bundle_info,
+        load_bundle,
+        save_bundle,
+    )
+
+    if args.project_command == "save":
+        sprites_dir = Path(args.sprites)
+        if not sprites_dir.is_dir():
+            print(f"error: not a directory: {sprites_dir}", file=sys.stderr)
+            return 2
+        images = {p.name: p.read_bytes() for p in sorted(sprites_dir.glob("*.png"))}
+        bundle = ProjectBundle(name=args.name, sprites=sorted(images))
+        path = save_bundle(bundle, images, Path(args.file))
+        print(json.dumps({"saved": str(path), "sprites": len(images)}, indent=2))
+        return 0
+    if args.project_command == "load":
+        loaded = load_bundle(Path(args.file))
+        out_dir = Path(args.output_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "manifest.json").write_text(
+            json.dumps(loaded.bundle.model_dump(), indent=2, sort_keys=True)
+        )
+        for name, data in loaded.images.items():
+            (out_dir / name).write_bytes(data)
+        print(json.dumps({"extracted": str(out_dir), "sprites": len(loaded.images)}, indent=2))
+        return 0
+    # info
+    print(json.dumps(bundle_info(Path(args.file)), indent=2))
+    return 0
+
+
 def _cmd_dataset(args: argparse.Namespace) -> int:
     directory = Path(args.directory)
     if not directory.is_dir():
@@ -668,13 +714,14 @@ def main(argv: list[str] | None = None) -> int:
         "character": _cmd_character,
         "export": _cmd_export,
         "tileset": _cmd_tileset,
+        "project": _cmd_project,
         "dataset": _cmd_dataset,
         "list": _cmd_list,
         "system": _cmd_system,
     }
     try:
         return handlers[args.command](args)
-    except (UnknownRegistryKeyError, ValueError) as error:
+    except (PixelForgeError, ValueError, FileNotFoundError) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
 

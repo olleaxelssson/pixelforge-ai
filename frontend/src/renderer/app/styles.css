@@ -1387,3 +1387,41 @@ body {
   gap: 8px;
   margin-bottom: 4px;
 }
+
+/* --- Project bar (M25) --- */
+.project-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.project-name {
+  width: 140px;
+  padding: 3px 8px;
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.project-dirty {
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.project-opened {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.project-error {
+  font-size: 11px;
+  color: var(--danger);
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

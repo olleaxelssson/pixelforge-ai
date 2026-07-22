@@ -34,8 +34,9 @@
 - ✅ (M22) Seamless tiling (seam-blend) + live tiling preview; Wang/blob auto-tile export
 - ✅ (M23) Tileset generation mode: coherent seam-locked terrain families + paintable preview
 - ✅ (M24) Godot 4 `.tres` + Tiled `.tsx`/`.tmx` tileset export (autotiling metadata baked in)
+- ✅ (M25) Portable `.pforge` project save/load + atomic writes + autosave/crash-recovery
 - Dockable/multi-window layouts, advanced selection, palette editor v2
-- Autosave/session recovery hardening, project templates
+- Project templates
 - ✅ (M20) Aseprite-compatible export (.aseprite writer)
 
 ## M6 — Extensibility & release
@@ -288,3 +289,19 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   — no engine needed. Surfaced as `pixelforge export --format godot-tileset|tiled-tileset` and, in
   the Tileset tab, an **Export for a game engine** block that downloads each as a zip. Browser E2E
   confirmed the Godot zip contains `*_blob.png` + `*.tres`.
+
+### M25 — Project save/load & session recovery hardening (M5, D-001) ✅
+- New `projects/bundle.py`: the portable single-file **`.pforge`** workspace archive — a
+  **deterministic** zip of a `manifest.json` plus the workspace's PNG assets. Determinism is
+  load-bearing: entries are written **sorted**, **uncompressed** (`ZIP_STORED`), with a **fixed
+  timestamp**, and image bytes are carried **verbatim** (never re-encoded) — so a `save → load →
+  save` round-trip is **byte-identical on any machine** (the property the tests assert).
+- **Atomic writes** (`atomic_write_bytes`: temp file → `fsync` → `os.replace`) so a crash mid-save
+  can never corrupt an existing file, and an **`AutosaveManager`** writes recoverable autosaves with
+  a `recover_latest` that returns the newest one on launch. A `schema_version` +
+  `migrate_manifest` hook keeps older bundles loadable (newer-than-supported is rejected clearly).
+- Surfaced as `pixelforge project save|load|info <file>` and `POST /api/project/save` (→ `.pforge`
+  download) / `POST /api/project/load` (→ manifest + sprites). A header **Project bar** (name, Save,
+  Open, and an **unsaved-changes** dot) round-trips the workspace; pure `projectView.ts` (dirty
+  tracking + manifest summary) unit-tested. Browser E2E: generate → dirty → Save → clean → Open
+  restores the set.

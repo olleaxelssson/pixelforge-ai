@@ -7,6 +7,7 @@ import type {
   CharacterIdentity,
   DatasetReport,
   DriftResult,
+  ProjectLoadResponse,
   TileSetResult,
   GenerationMode,
   GenerationRequest,
@@ -88,6 +89,12 @@ export const api = {
     dup_distance?: number;
   }) => request<DatasetReport>("/api/dataset", { method: "POST", body: JSON.stringify(body) }),
 
+  loadProject: (bundleBase64: string) =>
+    request<ProjectLoadResponse>("/api/project/load", {
+      method: "POST",
+      body: JSON.stringify({ bundle_base64: bundleBase64 }),
+    }),
+
   generateTileset: (body: {
     prompt: string;
     variants?: number;
@@ -141,6 +148,34 @@ export async function downloadExport(body: {
   const disposition = response.headers.get("Content-Disposition") ?? "";
   const match = /filename="?([^"]+)"?/.exec(disposition);
   const filename = match?.[1] ?? `${body.options?.base_name ?? "export"}`;
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+/** POST a project bundle and trigger a browser download of the returned ``.pforge`` file. */
+export async function downloadProject(body: {
+  name: string;
+  created_at: number;
+  sprites: { name: string; image_base64: string }[];
+  palettes?: Record<string, unknown>[];
+  characters?: Record<string, unknown>[];
+  project?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/project/save`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`save failed: ${response.status} ${await response.text()}`);
+  const disposition = response.headers.get("Content-Disposition") ?? "";
+  const match = /filename="?([^"]+)"?/.exec(disposition);
+  const filename = match?.[1] ?? `${body.name || "project"}.pforge`;
   const blob = await response.blob();
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");

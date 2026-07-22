@@ -7,6 +7,7 @@ import { EditorPanel } from "../features/editor/EditorPanel";
 import { GenerationPanel } from "../features/generation/GenerationPanel";
 import { ResultsPanel } from "../features/generation/ResultsPanel";
 import { PalettePanel } from "../features/palettes/PalettePanel";
+import { ProjectBar } from "../features/project/ProjectBar";
 import { QAPanel } from "../features/qa/QAPanel";
 import { TilesetPanel } from "../features/tileset/TilesetPanel";
 import { useGenerationStore } from "../state/generationStore";
@@ -61,6 +62,7 @@ export function App() {
             </button>
           ))}
         </nav>
+        <ProjectBar />
         <span className={`backend-status ${backendOnline ? "online" : "offline"}`}>
           {backendOnline
             ? `backend online${system ? ` · ${system.device.device}` : ""}`

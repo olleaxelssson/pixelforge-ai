@@ -326,6 +326,30 @@ export interface DriftResult {
   consistent: boolean;
 }
 
+// --- Project bundles (.pforge) (M25) ---
+
+export interface ProjectManifest {
+  schema_version: number;
+  app_version: string;
+  name: string;
+  created_at: number;
+  sprites: string[];
+  palettes: Record<string, unknown>[];
+  characters: Record<string, unknown>[];
+  project: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+}
+
+export interface ProjectSprite {
+  name: string;
+  image_base64: string;
+}
+
+export interface ProjectLoadResponse {
+  manifest: ProjectManifest;
+  sprites: ProjectSprite[];
+}
+
 // --- Tileset generation (M23) ---
 
 export interface TileVariant {

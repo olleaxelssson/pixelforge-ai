@@ -40,6 +40,7 @@ cd backend
 .venv/bin/pixelforge character create "Elias" --subject "Captain Elias, veteran knight"  # then: add-frame, drift, list
 .venv/bin/pixelforge animate "a knight" --action walk --seed 7 -o /tmp/anim  # seed-anchored, palette-locked frames + GIF + sheet
 .venv/bin/pixelforge dataset build /path/to/sprites -o /tmp/ds  # validate/dedup/caption a folder → manifest.jsonl + lora_config.json
+.venv/bin/pixelforge project save game.pforge --sprites /tmp/sprites --name "My Game"  # portable workspace archive; also: project load/info
 .venv/bin/pixelforge generate "winter armor" --character <id>   # generate AS a stored character
 .venv/bin/pixelforge list modes          # also: styles, palettes, export-formats, backends, planning-backends, plugins, actions
 .venv/bin/pixelforge benchmark --backend mock   # time + QA-score a fixed suite (speed/quality/VRAM)
@@ -85,6 +86,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/tileset/` — Tileset generation (D-001, M23): `service.py` (`TileSet`: base tile + N seam-locked variants sharing one seed + one locked palette; edge-locked via `tileize.lock_edges_to` + re-quantize, checked with `edge_consistency`; variants assembled into the 47-tile Wang/blob sheet); `POST /api/tileset/generate`, `pixelforge tileset "<prompt>" --variants N`, Tileset tab
 - `backend/src/pixelforge/dataset/` — Dataset & LoRA-training toolkit (D-001, M21): `builder.py` (pure `build_dataset`: validate → dedup → caption → kohya `manifest.jsonl` + `lora_config.json`), `phash.py` (NEAREST-resize dHash + Hamming clustering, cross-machine deterministic), `caption.py` (reuses D-012 palette signals, no model), `trainer.py` (`LoraTrainer` gated like FLUX); `POST /api/dataset`, `pixelforge dataset build <dir>`, Dataset tab
 - `backend/src/pixelforge/plugins/` — Plugin SDK (D-014): `loader.py` discovers `pixelforge.*` entry points + required `PluginManifest`, registers into existing registries; off by default (`plugins_enabled` + `plugin_allowlist`), exposed via `GET /api/plugins` and `pixelforge list plugins`. Guide: `docs/developer/plugins.md`; sample: `examples/plugins/pixelforge-hello`
+- `backend/src/pixelforge/projects/bundle.py` — portable `.pforge` project bundles (D-001, M25): deterministic `ZIP_STORED` archive (manifest.json + PNGs, byte-stable `save→load→save`), atomic writes, schema `migrate_manifest` hook, `AutosaveManager` recovery; `POST /api/project/save|load`, `pixelforge project save|load|info`, header Project bar
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)
 - `frontend/src/renderer/features/{plan,qa,characters,palettes,dataset}/` — UI for the agentic layer (M13) + Dataset tab (M21): plan preview, QA panel, character manager, palette lab, dataset builder; pure view helpers (`planView.ts`, `qaView.ts`, `datasetView.ts`) are unit-tested, React components are not (test env is node-only)

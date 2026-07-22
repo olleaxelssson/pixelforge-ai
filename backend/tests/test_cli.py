@@ -192,6 +192,35 @@ def test_dataset_build_rejects_missing_dir(
     assert main(["dataset", "build", str(tmp_path / "nope")]) == 2
 
 
+def test_project_save_info_load(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    sprites = tmp_path / "sprites"
+    sprites.mkdir()
+    Image.new("RGBA", (16, 16), (200, 30, 30, 255)).save(sprites / "a.png")
+    Image.new("RGBA", (16, 16), (30, 120, 200, 255)).save(sprites / "b.png")
+    pforge = tmp_path / "game.pforge"
+
+    assert main(["project", "save", str(pforge), "--sprites", str(sprites), "--name", "Game"]) == 0
+    assert json.loads(capsys.readouterr().out)["sprites"] == 2
+    assert pforge.exists()
+
+    assert main(["project", "info", str(pforge)]) == 0
+    info = json.loads(capsys.readouterr().out)
+    assert info["name"] == "Game"
+    assert info["sprite_count"] == 2
+
+    out = tmp_path / "out"
+    assert main(["project", "load", str(pforge), "-o", str(out)]) == 0
+    assert (out / "manifest.json").exists()
+    assert (out / "a.png").exists() and (out / "b.png").exists()
+
+
+def test_project_load_rejects_corrupt(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    bad = tmp_path / "bad.pforge"
+    bad.write_bytes(b"not a zip")
+    assert main(["project", "load", str(bad), "-o", str(tmp_path / "out")]) == 2
+    assert "corrupt" in capsys.readouterr().err
+
+
 def test_list_and_system(capsys: pytest.CaptureFixture[str]) -> None:
     for what in ("modes", "styles", "palettes", "export-formats", "backends"):
         assert main(["list", what]) == 0
