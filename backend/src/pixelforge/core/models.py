@@ -45,6 +45,9 @@ class GenerationRequest(BaseModel):
     # Animation (M3/M18): lock these exact colors instead of extracting — how a frame sequence
     # keeps one palette across frames. Takes priority over extraction, below an explicit palette_id.
     locked_palette_hex: list[str] | None = None
+    # Seamless tiling (M22): wrap-aware seam-blend the edges so the sprite tiles without a seam
+    # (textures, terrain, backgrounds). Applied before palette quantization to stay on-palette.
+    tileable: bool = False
 
 
 class GeneratedImage(BaseModel):

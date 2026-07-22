@@ -20,6 +20,7 @@ class DetectorContext:
     lighting_direction: str | None = None  # e.g. "top-left"; None disables the light-dir check
     min_cluster_size: int = 3
     subject: str | None = None  # intended subject, e.g. "a knight" — enables the semantic critic
+    tileable: bool = False  # sprite is meant to tile — enables the seam-discontinuity check (M22)
 
 
 class QAScores(BaseModel):

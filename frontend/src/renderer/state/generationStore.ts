@@ -48,6 +48,7 @@ export const useGenerationStore = create<GenerationState>((set, get) => ({
     max_colors: 16,
     dither: "none",
     transparent_background: true,
+    tileable: false,
   },
 
   loadCatalogs: async () => {

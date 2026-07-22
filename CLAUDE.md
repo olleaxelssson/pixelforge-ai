@@ -31,7 +31,8 @@ cd backend
     --mode character --size 32 --seed 42 --batch 2 -o /tmp/sprites
 .venv/bin/pixelforge generate "health potion" --mode item \
     --palette 8bit-console --dither ordered -o /tmp/sprites
-.venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export   # also: aseprite, gif, sprite-sheet, godot, unreal, texture-atlas
+.venv/bin/pixelforge generate "mossy stone floor" --mode tileset --tileable -o /tmp/sprites  # seam-blended, tiles seamlessly
+.venv/bin/pixelforge export /tmp/sprites/cli_0.png --format unity --scale 4 -o /tmp/export   # also: aseprite, wang-blob, gif, sprite-sheet, godot, unreal, texture-atlas
 .venv/bin/pixelforge plan "a knight with a flaming sword" --mode character   # Scene Graph, no image
 .venv/bin/pixelforge palette 8bit-console                 # analysis; also --compress N, --simulate deuteranopia
 .venv/bin/pixelforge qa sprite.png --repair -o fixed.png  # detect defects; --repair applies safe fixes
@@ -71,6 +72,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 ## Code map
 
 - `backend/src/pixelforge/generation/pipeline.py` — 4-stage pipeline (diffusion → pixelize → palette → cleanup)
+- `backend/src/pixelforge/generation/tileize.py` — seamless tiling (M22): pure wrap-aware seam-blend `make_tileable` + `seam_metrics`/`seam_score`; applied before quantization when `request.tileable`. Seam QA in `qa/detectors/seam.py`; 47-tile `wang-blob` exporter in `exporters/wang_blob.py`. `pixelforge generate --tileable`, `pixelforge export --format wang-blob`
 - `backend/src/pixelforge/generation/backends/` — `mock.py`, `flux.py` (M2: fp8/offload/ControlNet, decisions in torch-free `flux_config.py`); register new models in `registry.py`
 - `backend/src/pixelforge/generation/benchmark.py` — benchmark suite (M2): times + QA-scores generations; `pixelforge benchmark`. Golden-image regression in `backend/tests/golden/` (`PIXELFORGE_UPDATE_GOLDEN=1` to refresh)
 - `backend/src/pixelforge/core/scene_graph.py` — the `SceneGraph` (D-009): structured, typed plan for one generation
@@ -84,6 +86,7 @@ cd frontend && npm run check     # eslint + tsc + vitest
 - `backend/src/pixelforge/config/settings.py` — all backend configuration (env-overridable, `PIXELFORGE_` prefix)
 - `frontend/src/renderer/` — React UI; `state/editorStore.ts` (Zustand, immutable undo snapshots), `features/editor/pixelOps.ts` (pure pixel ops)
 - `frontend/src/renderer/features/{plan,qa,characters,palettes,dataset}/` — UI for the agentic layer (M13) + Dataset tab (M21): plan preview, QA panel, character manager, palette lab, dataset builder; pure view helpers (`planView.ts`, `qaView.ts`, `datasetView.ts`) are unit-tested, React components are not (test env is node-only)
+- `frontend/src/renderer/features/generation/{TilePreview.tsx,tileView.ts}` — seamless-tiling toggle + live 3×3 tiling preview with a seamlessness readout (M22); pure `tileView.ts` (`seamScore`) is unit-tested
 - `frontend/src/shared/config.ts` — frontend configuration
 
 ## Conventions

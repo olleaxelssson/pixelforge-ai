@@ -59,6 +59,42 @@ def test_generate_palette_lock(tmp_path: Path, capsys: pytest.CaptureFixture[str
     assert len(payload["images"][0]["palette_hex"]) <= 4
 
 
+def test_generate_tileable(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    import numpy as np
+
+    from pixelforge.generation.tileize import seam_score
+
+    code = main(
+        [
+            "generate",
+            "grass",
+            "--size",
+            "32",
+            "--seed",
+            "3",
+            "--tileable",
+            "-o",
+            str(tmp_path),
+            "--quiet",
+        ]
+    )
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    image = Image.open(payload["images"][0]["path"]).convert("RGBA")
+    assert seam_score(np.asarray(image)) == 1.0
+
+
+def test_export_wang_blob(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    tile = tmp_path / "grass.png"
+    Image.new("RGBA", (16, 16), (120, 180, 90, 255)).save(tile)
+    code = main(["export", str(tile), "--format", "wang-blob", "-o", str(tmp_path / "out")])
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert any(p.endswith("_blob.png") for p in payload["files"])
+    assert any(p.endswith("_blob.json") for p in payload["files"])
+    assert all(Path(p).exists() for p in payload["files"])
+
+
 def test_export_spritesheet(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     frame = tmp_path / "frame.png"
     Image.new("RGBA", (16, 16), (255, 0, 0, 255)).save(frame)

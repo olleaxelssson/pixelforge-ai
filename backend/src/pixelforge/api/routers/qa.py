@@ -24,6 +24,7 @@ class QARequest(BaseModel):
     palette_id: str | None = None
     lighting_direction: str | None = None
     subject: str | None = None  # intended subject, enables the semantic critic (D-013)
+    tileable: bool = False  # sprite is meant to tile — enables the seam-discontinuity check (M22)
     repair: bool = False
     # Layer 2 (D-013): regenerate failing regions for up to ``max_iterations`` bounded passes.
     repair_loop: bool = False
@@ -61,6 +62,7 @@ async def run_qa(request: QARequest, state: AppState = Depends(get_state)) -> QA
         palette=palette,
         lighting_direction=request.lighting_direction,
         subject=request.subject,
+        tileable=request.tileable,
     )
 
     if request.repair_loop:

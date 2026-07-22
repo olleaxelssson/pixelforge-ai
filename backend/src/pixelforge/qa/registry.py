@@ -13,6 +13,7 @@ from pixelforge.qa.detectors.floating_pixels import FloatingPixelsDetector
 from pixelforge.qa.detectors.light_direction import LightDirectionDetector
 from pixelforge.qa.detectors.palette_overflow import PaletteOverflowDetector
 from pixelforge.qa.detectors.pillow_shading import PillowShadingDetector
+from pixelforge.qa.detectors.seam import SeamDiscontinuityDetector
 from pixelforge.qa.detectors.silhouette import SilhouetteDetector
 
 BUILTIN_DETECTORS: list[Detector] = [
@@ -22,6 +23,7 @@ BUILTIN_DETECTORS: list[Detector] = [
     SilhouetteDetector(),
     PillowShadingDetector(),
     LightDirectionDetector(),
+    SeamDiscontinuityDetector(),
 ]
 
 _PLUGIN_DETECTORS: list[Detector] = []

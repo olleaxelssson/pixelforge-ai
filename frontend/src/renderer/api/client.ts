@@ -55,6 +55,7 @@ export const api = {
     palette_id?: string | null;
     lighting_direction?: string | null;
     subject?: string | null;
+    tileable?: boolean;
     repair?: boolean;
     repair_loop?: boolean;
     max_iterations?: number;

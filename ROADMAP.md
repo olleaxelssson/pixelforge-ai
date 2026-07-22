@@ -31,7 +31,8 @@
 - ✅ (M21) LoRA fine-tuning trainer wrapper (gated like FLUX); metadata/label editor, balancing later
 
 ## M5 — Editor & UX depth
-- Dockable/multi-window layouts, tile preview (seamless mode), advanced selection, palette editor v2
+- ✅ (M22) Seamless tiling (seam-blend) + live tiling preview; Wang/blob auto-tile export
+- Dockable/multi-window layouts, advanced selection, palette editor v2
 - Autosave/session recovery hardening, project templates
 - ✅ (M20) Aseprite-compatible export (.aseprite writer)
 
@@ -230,3 +231,24 @@ cheapest/most-decoupled value first and freezes plugin interfaces last.
   optionally writes the manifest + config) and `POST /api/dataset` (analyzes base64 uploads in
   memory). New **Dataset** tab: multi-file upload → summary counts, per-image validation table with
   trainable/duplicate/invalid badges, duplicate clusters, and manifest + config previews.
+
+### M22 — Seamless tiling & auto-tile export (M5, D-001) ✅
+- `generation/tileize.py`: a pure, deterministic **wrap-aware edge blend** (`make_tileable`). Within
+  a band on each side, every pixel is cross-mixed with its wrap-neighbour on the opposite edge,
+  weighted so the mix is exactly half-half at the very edge — making the two edges **identical** so
+  the seam vanishes — and fading to zero toward the interior (the middle is untouched). Horizontal
+  then vertical passes also converge the four corners, so corner-to-corner tiling is seamless too.
+- Opt-in via a `tileable` request flag. Applied **before** palette quantization in the pipeline, so
+  the blended edge colours snap back onto the locked palette while staying equal on both sides
+  (equal RGB quantizes to the same index) — on-palette *and* seamless after quantization.
+- **Seam-discontinuity QA detector** (`qa/detectors/seam.py`): measures the edge-wrap difference and
+  warns on a visible seam; only fires for sprites meant to tile (`DetectorContext.tileable`) and
+  feeds the existing QA engine. `seam_metrics`/`seam_score` are shared with the pipeline.
+- **Wang/blob auto-tile exporter** (`exporters/wang_blob.py`): builds the standard **47-tile blob
+  set** from one base tile by carving a border band off each disconnected side and rounding inner
+  corners. The 47 comes from the blob rule (a corner counts only when both its adjacent edges do),
+  which collapses 256 raw neighbour configs to 47. Emits the sheet + a JSON bitmask-to-cell map.
+- Surfaced as `pixelforge generate --tileable`, `pixelforge export --format wang-blob`, a `tileable`
+  flag on the generate/QA endpoints, and a **live tiling preview** in the Generate tab: a 3x3 repeat
+  with a seamlessness readout, computed client-side by the pure `tileView.ts` `seamScore`
+  (unit-tested). Browser E2E confirmed a "100% seamless" preview.

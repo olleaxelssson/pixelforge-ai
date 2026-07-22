@@ -33,6 +33,7 @@ from pixelforge.generation.plan_compiler import (
     compile_silhouette_map,
 )
 from pixelforge.generation.prompt_builder import build_negative_prompt, build_prompt
+from pixelforge.generation.tileize import make_tileable
 from pixelforge.modes.registry import ModeRegistry
 from pixelforge.palettes.model import hex_to_rgb, rgb_to_hex
 from pixelforge.palettes.quantize import apply_palette, extract_palette
@@ -116,6 +117,9 @@ class GenerationPipeline:
             base = 60.0 + (index / len(raw_images)) * 35.0
             on_progress("pixelize", base)
             sprite = pixelize(raw, request.width, request.height)
+            # Seamless tiling (M22): blend edges before quantization so equal edges stay on-palette.
+            if request.tileable:
+                sprite = make_tileable(sprite)
 
             on_progress("palette", base + 15.0 / len(raw_images))
             if request.palette_id:
@@ -143,6 +147,7 @@ class GenerationPipeline:
                     palette=colors if request.palette_id else None,
                     lighting_direction=request.lighting_direction,
                     subject=request.prompt,
+                    tileable=request.tileable,
                 )
                 if self._qa is not None:
                     sprite, _ = self._qa.repair(sprite, context)

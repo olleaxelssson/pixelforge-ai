@@ -72,6 +72,9 @@ def _build_parser() -> argparse.ArgumentParser:
     gen.add_argument("--dither", choices=["none", "ordered"], default="none")
     gen.add_argument("--negative", default="", help="Negative prompt")
     gen.add_argument("--opaque", action="store_true", help="Disable transparent background")
+    gen.add_argument(
+        "--tileable", action="store_true", help="Seam-blend edges so the sprite tiles seamlessly"
+    )
     gen.add_argument("--reference", default=None, help="Path to a reference image")
     gen.add_argument("--character", default=None, help="Stored character id (identity memory)")
     gen.add_argument("-o", "--output-dir", default=".", help="Directory for output PNGs")
@@ -124,6 +127,9 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     qac.add_argument(
         "--opaque", action="store_true", help="Sprite is not on a transparent background"
+    )
+    qac.add_argument(
+        "--tileable", action="store_true", help="Check the tiling seam (edge-wrap discontinuity)"
     )
     qac.add_argument(
         "--repair", action="store_true", help="Apply safe repairs and write the result"
@@ -281,6 +287,7 @@ def _cmd_generate(args: argparse.Namespace) -> int:
         max_colors=args.max_colors,
         dither=DitherMode(args.dither),
         transparent_background=not args.opaque,
+        tileable=args.tileable,
         reference_image_base64=_encode_reference(args.reference),
     )
     if args.character:
@@ -356,6 +363,7 @@ def _cmd_qa(args: argparse.Namespace) -> int:
         palette=palette,
         lighting_direction=args.lighting,
         subject=args.subject,
+        tileable=args.tileable,
     )
     critic_kind = args.critic or settings.qa_critic
     if critic_kind == "vlm":

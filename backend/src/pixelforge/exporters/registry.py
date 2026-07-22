@@ -12,6 +12,7 @@ from pixelforge.exporters.standard import (
     SpriteSheetExporter,
     TextureAtlasExporter,
 )
+from pixelforge.exporters.wang_blob import WangBlobExporter
 
 _EXPORTERS: dict[str, Exporter] = {}
 
@@ -27,6 +28,7 @@ def _ensure_registered() -> None:
             GodotExporter(),
             UnrealExporter(),
             AsepriteExporter(),
+            WangBlobExporter(),
         ):
             _EXPORTERS[exporter.format_id] = exporter
 

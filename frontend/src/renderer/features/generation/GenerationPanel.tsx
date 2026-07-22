@@ -201,6 +201,14 @@ export function GenerationPanel() {
           />{" "}
           Transparent background
         </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={request.tileable ?? false}
+            onChange={(e) => updateRequest({ tileable: e.target.checked })}
+          />{" "}
+          Seamless tiling (seam-blend edges)
+        </label>
       </div>
 
       <button

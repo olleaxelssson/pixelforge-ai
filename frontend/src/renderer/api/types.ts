@@ -21,6 +21,7 @@ export interface GenerationRequest {
   reference_image_base64?: string | null;
   reference_strength?: number;
   character_id?: string | null;
+  tileable?: boolean;
 }
 
 export interface GeneratedImage {

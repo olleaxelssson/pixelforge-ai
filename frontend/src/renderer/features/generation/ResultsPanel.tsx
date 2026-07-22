@@ -2,6 +2,7 @@ import { api } from "../../api/client";
 import type { Job } from "../../api/types";
 import { useEditorStore } from "../../state/editorStore";
 import { useGenerationStore } from "../../state/generationStore";
+import { TilePreview } from "./TilePreview";
 
 function openInEditor(filename: string, width: number, height: number) {
   const image = new Image();
@@ -43,13 +44,15 @@ function JobCard({ job }: { job: Job }) {
       {job.result && (
         <div className="result-images">
           {job.result.images.map((image) => (
-            <img
-              key={image.filename}
-              className="result-image"
-              src={api.imageUrl(image.filename)}
-              title={`seed ${image.seed} — click to edit`}
-              onClick={() => openInEditor(image.filename, image.width, image.height)}
-            />
+            <div key={image.filename} className="result-item">
+              <img
+                className="result-image"
+                src={api.imageUrl(image.filename)}
+                title={`seed ${image.seed} — click to edit`}
+                onClick={() => openInEditor(image.filename, image.width, image.height)}
+              />
+              {job.request.tileable && <TilePreview filename={image.filename} />}
+            </div>
           ))}
         </div>
       )}

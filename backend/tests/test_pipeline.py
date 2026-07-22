@@ -44,6 +44,35 @@ def test_pipeline_produces_target_size(tmp_path):
     assert image.size == (32, 32)
 
 
+def test_pipeline_tileable_produces_seamless_sprite(tmp_path):
+    from pixelforge.generation.tileize import seam_score
+
+    request = GenerationRequest(
+        prompt="grass texture", mode="tileset", width=32, height=32, seed=3, tileable=True
+    )
+    result = _pipeline(tmp_path).run("tile", request, lambda stage, pct: None)
+    image = Image.open(tmp_path / result.images[0].filename)
+    rgba = np.asarray(image.convert("RGBA"))
+    # Edges match after quantization (equal RGB → same palette index), so the seam is gone.
+    assert np.array_equal(rgba[:, 0, :3], rgba[:, -1, :3])
+    assert np.array_equal(rgba[0, :, :3], rgba[-1, :, :3])
+    assert seam_score(rgba) == 1.0
+
+
+def test_pipeline_tileable_is_opt_in(tmp_path):
+    """With the flag off, the tileize step never runs — output is byte-identical to the baseline."""
+    off = GenerationRequest(prompt="hero sprite", mode="character", width=32, height=32, seed=8)
+    on = off.model_copy(update={"tileable": True})
+    pipeline = _pipeline(tmp_path)
+    a = np.asarray(
+        Image.open(tmp_path / pipeline.run("a", off, lambda s, p: None).images[0].filename)
+    )
+    b = np.asarray(
+        Image.open(tmp_path / pipeline.run("b", on, lambda s, p: None).images[0].filename)
+    )
+    assert not np.array_equal(a, b)  # the flag changes the edges
+
+
 def test_pipeline_respects_palette_lock(tmp_path):
     request = GenerationRequest(
         prompt="hero",
