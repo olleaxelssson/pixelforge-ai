@@ -147,6 +147,23 @@ studylab scrape wikimedia-pixel-art --execute --limit 20
 Runs are **resumable**: if interrupted, re-running skips everything already processed. Collection
 obeys the license gate, `robots.txt`, and the per-domain rate limit on every candidate.
 
+### Bulk CC0 packs (Kenney / OpenGameArt)
+
+Wikimedia Commons is thin on pixel art. For a real haul, use the **`archive`** adapter, which ingests
+downloadable CC0 asset *packs* (the format Kenney and OpenGameArt actually ship). It downloads each
+pack ZIP once (rate-limited + robots-checked), extracts the sprites in memory, and imports each under
+the pack's declared license. `sources.example.toml` has ready `kenney-cc0` and `opengameart-cc0`
+sections — paste in a pack's download URL, flip `enabled = true`, then:
+
+```bash
+studylab scrape kenney-cc0 --config sources.toml            # dry-run
+studylab scrape kenney-cc0 --config sources.toml --execute  # download + extract the pack
+```
+
+Kenney releases everything as CC0, so its packs are safe to list directly; every OpenGameArt
+submission states its own license, so only list packs whose license you've read. `require_pixel_art =
+true` keeps only the pixel-art members and skips vector/photo extras.
+
 ---
 
 ## Everyday use (CLI)
@@ -211,7 +228,9 @@ studylab/
   webapp.py          FastAPI app + embedded single-page UI
   analysis/          palette, pixel-art metrics, embedding, sheets/GIF, notes,
                      critique, the LLM digest, and the optional VLM describer
-  scraper/           allowlist, robots, rate-limited fetch, adapters, runner
+  scraper/           allowlist, robots, rate-limited fetch, runner, and adapters:
+                     wikimedia (Commons API), direct (image URLs), archive (CC0
+                     ZIP packs — Kenney/OpenGameArt — extracted in memory)
 tests/               scraper rules, provenance, import, dedup, analysis, search,
                      tagger, backup, and the web API (all offline)
 sources.example.toml the allowlist template

@@ -26,6 +26,7 @@ from studylab.db import Database
 from studylab.importer import ImportRequest, import_bytes
 from studylab.logging_setup import get_logger
 from studylab.provenance import ProvenanceError, build_attribution, is_allowed_license
+from studylab.scraper.archive import ArchiveAdapter, extract_images, looks_like_zip, member_title
 from studylab.scraper.direct import DirectAdapter
 from studylab.scraper.fetch import Fetcher, FetchError, HttpFetcher
 from studylab.scraper.models import Candidate, SourceConfig
@@ -46,6 +47,8 @@ def get_adapter(name: str) -> Adapter:
         return WikimediaAdapter()
     if name == "direct":
         return DirectAdapter()
+    if name == "archive":
+        return ArchiveAdapter()
     raise ValueError(f"unknown adapter: {name}")
 
 
@@ -198,16 +201,18 @@ def run_source(
             continue
 
         if options.dry_run:
+            note = "would download pack + extract images (dry-run)" if cand.kind == "archive" \
+                else "would collect (dry-run)"
             report.outcomes.append(
-                CandidateOutcome(
-                    cand.download_url, cand.license, "planned", cand.title,
-                    "would collect (dry-run)",
-                )
+                CandidateOutcome(cand.download_url, cand.license, "planned", cand.title, note)
             )
             collected += 1
             continue
 
-        outcome = _download_and_import(db, settings, source, source_id, cand, fetcher)
+        if cand.kind == "archive":
+            outcome = _download_and_extract_archive(db, settings, source, source_id, cand, fetcher)
+        else:
+            outcome = _download_and_import(db, settings, source, source_id, cand, fetcher)
         report.outcomes.append(outcome)
         state.record(cand.download_url, outcome.status)
         if outcome.status in ("imported", "duplicate"):
@@ -253,14 +258,72 @@ def _download_and_import(
         source_url=cand.page_url,
         attribution_template=(source.attribution_template or attribution),
         require_allowed=True,
+        require_pixel_art=source.require_pixel_art,
     )
     try:
         result = import_bytes(db, settings, resp.body, req)
     except ProvenanceError as exc:
         return CandidateOutcome(cand.download_url, cand.license, "refused", cand.title, str(exc))
 
-    status = result.status if result.status != "imported" else "imported"
     return CandidateOutcome(
-        cand.download_url, cand.license, status, cand.title, result.message,
+        cand.download_url, cand.license, result.status, cand.title, result.message,
         asset_id=result.asset_id, warnings=result.warnings,
+    )
+
+
+def _download_and_extract_archive(
+    db: Database,
+    settings: Settings,
+    source: SourceConfig,
+    source_id: int,
+    cand: Candidate,
+    fetcher: Fetcher,
+) -> CandidateOutcome:
+    """Download one pack, extract its image members, and import each under the pack's license."""
+    try:
+        resp = fetcher.get(cand.download_url)
+    except FetchError as exc:
+        return CandidateOutcome(cand.download_url, cand.license, "error", cand.title, str(exc))
+
+    if not looks_like_zip(resp.body):
+        return CandidateOutcome(
+            cand.download_url, cand.license, "refused", cand.title,
+            "not a ZIP archive (expected a downloadable pack)",
+        )
+
+    try:
+        members = extract_images(resp.body)
+    except Exception as exc:  # noqa: BLE001 — a corrupt archive shouldn't abort the whole run
+        return CandidateOutcome(cand.download_url, cand.license, "error", cand.title,
+                                f"could not read archive: {exc}")
+    if not members:
+        return CandidateOutcome(cand.download_url, cand.license, "skipped", cand.title,
+                                "archive contained no images")
+
+    tally: dict[str, int] = {}
+    for name, data in members:
+        req = ImportRequest(
+            source_id=source_id,
+            license=cand.license,
+            creator=cand.creator,
+            title=member_title(cand.title, name),
+            source_url=cand.page_url,
+            attribution_template=source.attribution_template,
+            require_allowed=True,
+            require_pixel_art=source.require_pixel_art,
+        )
+        try:
+            result = import_bytes(db, settings, data, req)
+        except ProvenanceError as exc:
+            log.error("archive member refused (%s): %s", name, exc)
+            tally["refused"] = tally.get("refused", 0) + 1
+            continue
+        tally[result.status] = tally.get(result.status, 0) + 1
+
+    imported = tally.get("imported", 0)
+    status = "imported" if imported else ("duplicate" if tally.get("duplicate") else "skipped")
+    summary = ", ".join(f"{n} {s}" for s, n in sorted(tally.items()))
+    return CandidateOutcome(
+        cand.download_url, cand.license, status, cand.title,
+        f"pack: {len(members)} images ({summary})",
     )

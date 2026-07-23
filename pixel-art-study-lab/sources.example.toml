@@ -56,3 +56,43 @@ urls = [
     # "https://example.org/some-cc0-tileset.png",
 ]
 attribution_template = "{title} — {license} ({source_url})"
+
+# --- Kenney asset packs (all CC0) -------------------------------------------
+# Kenney (kenney.nl) releases every asset under CC0. The `archive` adapter downloads
+# each pack ZIP once (rate-limited + robots-checked), extracts the sprites in memory,
+# and imports each one as CC0. `require_pixel_art = true` keeps only the pixel members
+# (Kenney also ships vector packs). To get real URLs: open a pixel pack on kenney.nl,
+# copy its "Download" ZIP link, and paste it below.
+[sources.kenney-cc0]
+adapter = "archive"
+enabled = false
+homepage = "https://kenney.nl/assets"
+terms_url = "https://kenney.nl/support"
+rate_limit_per_sec = 0.5
+max_items = 20
+allowed_licenses = ["CC0-1.0"]
+require_pixel_art = true
+default_creator = "Kenney (kenney.nl)"
+urls = [
+    # "https://kenney.nl/media/pages/assets/<pack>/<hash>/<pack>.zip",
+]
+attribution_template = "{title} — CC0 by Kenney ({source_url})"
+
+# --- OpenGameArt packs ------------------------------------------------------
+# OpenGameArt hosts freely-licensed art, but EACH submission states its own license —
+# read the page and only list packs whose license you've confirmed here. Keep one
+# license per source (make a second source for a different license). Point `urls` at
+# the pack's downloadable file (a .zip pack, or a direct image URL).
+[sources.opengameart-cc0]
+adapter = "archive"
+enabled = false
+homepage = "https://opengameart.org/"
+terms_url = "https://opengameart.org/content/faq"
+rate_limit_per_sec = 0.5
+max_items = 20
+allowed_licenses = ["CC0-1.0"]
+require_pixel_art = true
+urls = [
+    # "https://opengameart.org/sites/default/files/<verified-cc0-pack>.zip",
+]
+attribution_template = "{title} — {license} (via OpenGameArt, {source_url})"

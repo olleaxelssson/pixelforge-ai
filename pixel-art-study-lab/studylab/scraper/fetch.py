@@ -21,7 +21,7 @@ from studylab.logging_setup import get_logger
 
 log = get_logger("fetch")
 
-MAX_BYTES = 25 * 1024 * 1024  # 25 MiB safety cap per download
+MAX_BYTES = 128 * 1024 * 1024  # 128 MiB safety cap per download (packs can be tens of MiB)
 
 
 @dataclass

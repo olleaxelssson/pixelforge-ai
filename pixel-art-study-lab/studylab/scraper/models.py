@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 @dataclass
 class SourceConfig:
     name: str
-    adapter: str  # 'wikimedia' | 'direct'
+    adapter: str  # 'wikimedia' | 'direct' | 'archive'
     enabled: bool = False
     homepage: str = ""
     terms_url: str = ""
@@ -16,14 +16,20 @@ class SourceConfig:
     max_items: int = 40
     allowed_licenses: list[str] = field(default_factory=list)
     queries: list[str] = field(default_factory=list)
-    urls: list[str] = field(default_factory=list)  # for the 'direct' adapter
+    urls: list[str] = field(default_factory=list)  # for the 'direct' / 'archive' adapters
     attribution_template: str | None = None
     obey_robots: bool = True  # must stay True; a False value is rejected on load
+    require_pixel_art: bool = False  # skip pack members that don't look like pixel art
+    default_creator: str | None = None  # e.g. "Kenney (kenney.nl)"; recorded on every asset
 
 
 @dataclass
 class Candidate:
-    """One image the adapter proposes to collect, with its provenance resolved up front."""
+    """One item the adapter proposes to collect, with its provenance resolved up front.
+
+    ``kind`` is ``"image"`` for a single image URL, or ``"archive"`` for a downloadable pack
+    (e.g. a ZIP) whose image members are extracted and imported individually.
+    """
 
     download_url: str
     page_url: str
@@ -31,3 +37,4 @@ class Candidate:
     creator: str | None
     license: str
     attribution: str | None = None
+    kind: str = "image"  # 'image' | 'archive'

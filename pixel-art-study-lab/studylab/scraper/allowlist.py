@@ -18,7 +18,7 @@ from pathlib import Path
 from studylab.config import ALLOWED_LICENSES
 from studylab.scraper.models import SourceConfig
 
-KNOWN_ADAPTERS = frozenset({"wikimedia", "direct"})
+KNOWN_ADAPTERS = frozenset({"wikimedia", "direct", "archive"})
 
 
 class AllowlistError(ValueError):
@@ -55,8 +55,8 @@ def _validate(cfg: SourceConfig) -> SourceConfig:
         )
     # A completeness check that only matters once a source is actually turned on — a disabled
     # template (e.g. sources.example.toml with its URLs commented out) must still load.
-    if cfg.enabled and cfg.adapter == "direct" and not cfg.urls:
-        raise AllowlistError(f"source '{cfg.name}': the 'direct' adapter needs at least one url.")
+    if cfg.enabled and cfg.adapter in ("direct", "archive") and not cfg.urls:
+        raise AllowlistError(f"source '{cfg.name}': the '{cfg.adapter}' adapter needs at least one url.")
     return cfg
 
 
@@ -80,6 +80,10 @@ def _source_from_table(name: str, table: dict[str, object]) -> SourceConfig:
                 str(table["attribution_template"]) if "attribution_template" in table else None
             ),
             obey_robots=bool(_get("obey_robots", True)),
+            require_pixel_art=bool(_get("require_pixel_art", False)),
+            default_creator=(
+                str(table["default_creator"]) if "default_creator" in table else None
+            ),
         )
     except (TypeError, ValueError) as exc:
         raise AllowlistError(f"source '{name}': malformed field — {exc}") from exc
