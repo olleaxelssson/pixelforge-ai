@@ -1,0 +1,58 @@
+# sources.example.toml — the scraper allowlist.
+#
+# Copy this to `sources.toml` and edit. NOTHING is ever collected unless a source is
+# `enabled = true`. Even then, every candidate must pass three gates, in order:
+#   1. its license is on THIS source's `allowed_licenses` (and the global allowlist),
+#   2. the site's robots.txt permits the download URL,
+#   3. the per-domain rate limit is respected.
+# The default run is a dry-run: it shows you what WOULD be collected, and downloads nothing.
+#
+# `obey_robots` must be true. The loader rejects the file if any source sets it to false.
+# Only these licenses may appear in `allowed_licenses`:
+#   CC0-1.0, PD, CC-BY-4.0, CC-BY-3.0, CC-BY-SA-4.0, CC-BY-SA-3.0, OGA-BY-3.0, self
+
+# --- Wikimedia Commons ------------------------------------------------------
+# Public API, machine-readable per-file licenses. This source only accepts files whose
+# license maps to CC0 or public domain, so no attribution string is strictly required —
+# but one is still recorded when the Artist field is present.
+[sources.wikimedia-pixel-art]
+adapter = "wikimedia"
+enabled = false                      # flip to true only after you've read the terms
+homepage = "https://commons.wikimedia.org/"
+terms_url = "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia"
+rate_limit_per_sec = 0.5             # be gentle: one request every two seconds
+max_items = 30
+allowed_licenses = ["CC0-1.0", "PD"]
+queries = [
+    "pixel art sprite",
+    "16x16 tileset",
+]
+attribution_template = "{title} — {license} (via Wikimedia Commons, {source_url})"
+
+# A second Commons source that also accepts attribution licenses (CC-BY / CC-BY-SA).
+# Attribution is mandatory for these and is stored with every asset.
+[sources.wikimedia-cc-by]
+adapter = "wikimedia"
+enabled = false
+homepage = "https://commons.wikimedia.org/"
+terms_url = "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia"
+rate_limit_per_sec = 0.5
+max_items = 20
+allowed_licenses = ["CC-BY-4.0", "CC-BY-SA-4.0"]
+queries = ["pixel art game sprite"]
+attribution_template = "\"{title}\" by {creator} — {license} ({source_url})"
+
+# --- Direct URL list --------------------------------------------------------
+# For a small, hand-vetted list of image URLs whose license YOU have verified.
+# Use exactly one entry in `allowed_licenses`: the license every URL shares.
+[sources.my-cc0-picks]
+adapter = "direct"
+enabled = false
+homepage = "https://example.org/my-vetted-cc0-list"
+rate_limit_per_sec = 0.5
+max_items = 10
+allowed_licenses = ["CC0-1.0"]
+urls = [
+    # "https://example.org/some-cc0-tileset.png",
+]
+attribution_template = "{title} — {license} ({source_url})"
