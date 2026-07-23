@@ -1,0 +1,26 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Local library data (never commit collected assets or the database)
+.studylab/
+data/
+demo/
+*.db
+*.db-wal
+*.db-shm
+studylab.log
+
+# The real allowlist is per-user; only the example is committed.
+sources.toml
+
+# Exports / backups
+*.zip
+tagger.npz

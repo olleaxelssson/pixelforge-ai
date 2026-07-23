@@ -1,0 +1,98 @@
+# sources.example.toml — the scraper allowlist.
+#
+# Copy this to `sources.toml` and edit. NOTHING is ever collected unless a source is
+# `enabled = true`. Even then, every candidate must pass three gates, in order:
+#   1. its license is on THIS source's `allowed_licenses` (and the global allowlist),
+#   2. the site's robots.txt permits the download URL,
+#   3. the per-domain rate limit is respected.
+# The default run is a dry-run: it shows you what WOULD be collected, and downloads nothing.
+#
+# `obey_robots` must be true. The loader rejects the file if any source sets it to false.
+# Only these licenses may appear in `allowed_licenses`:
+#   CC0-1.0, PD, CC-BY-4.0, CC-BY-3.0, CC-BY-SA-4.0, CC-BY-SA-3.0, OGA-BY-3.0, self
+
+# --- Wikimedia Commons ------------------------------------------------------
+# Public API, machine-readable per-file licenses. This source only accepts files whose
+# license maps to CC0 or public domain, so no attribution string is strictly required —
+# but one is still recorded when the Artist field is present.
+[sources.wikimedia-pixel-art]
+adapter = "wikimedia"
+enabled = false                      # flip to true only after you've read the terms
+homepage = "https://commons.wikimedia.org/"
+terms_url = "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia"
+rate_limit_per_sec = 0.5             # be gentle: one request every two seconds
+max_items = 30
+allowed_licenses = ["CC0-1.0", "PD"]
+queries = [
+    "pixel art sprite",
+    "16x16 tileset",
+]
+attribution_template = "{title} — {license} (via Wikimedia Commons, {source_url})"
+
+# A second Commons source that also accepts attribution licenses (CC-BY / CC-BY-SA).
+# Attribution is mandatory for these and is stored with every asset.
+[sources.wikimedia-cc-by]
+adapter = "wikimedia"
+enabled = false
+homepage = "https://commons.wikimedia.org/"
+terms_url = "https://commons.wikimedia.org/wiki/Commons:Reusing_content_outside_Wikimedia"
+rate_limit_per_sec = 0.5
+max_items = 20
+allowed_licenses = ["CC-BY-4.0", "CC-BY-SA-4.0"]
+queries = ["pixel art game sprite"]
+attribution_template = "\"{title}\" by {creator} — {license} ({source_url})"
+
+# --- Direct URL list --------------------------------------------------------
+# For a small, hand-vetted list of image URLs whose license YOU have verified.
+# Use exactly one entry in `allowed_licenses`: the license every URL shares.
+[sources.my-cc0-picks]
+adapter = "direct"
+enabled = false
+homepage = "https://example.org/my-vetted-cc0-list"
+rate_limit_per_sec = 0.5
+max_items = 10
+allowed_licenses = ["CC0-1.0"]
+urls = [
+    # "https://example.org/some-cc0-tileset.png",
+]
+attribution_template = "{title} — {license} ({source_url})"
+
+# --- Kenney asset packs (all CC0) -------------------------------------------
+# Kenney (kenney.nl) releases every asset under CC0. The `archive` adapter downloads
+# each pack ZIP once (rate-limited + robots-checked), extracts the sprites in memory,
+# and imports each one as CC0. `require_pixel_art = true` keeps only the pixel members
+# (Kenney also ships vector packs). To get real URLs: open a pixel pack on kenney.nl,
+# copy its "Download" ZIP link, and paste it below.
+[sources.kenney-cc0]
+adapter = "archive"
+enabled = false
+homepage = "https://kenney.nl/assets"
+terms_url = "https://kenney.nl/support"
+rate_limit_per_sec = 0.5
+max_items = 20
+allowed_licenses = ["CC0-1.0"]
+require_pixel_art = true
+default_creator = "Kenney (kenney.nl)"
+urls = [
+    # "https://kenney.nl/media/pages/assets/<pack>/<hash>/<pack>.zip",
+]
+attribution_template = "{title} — CC0 by Kenney ({source_url})"
+
+# --- OpenGameArt packs ------------------------------------------------------
+# OpenGameArt hosts freely-licensed art, but EACH submission states its own license —
+# read the page and only list packs whose license you've confirmed here. Keep one
+# license per source (make a second source for a different license). Point `urls` at
+# the pack's downloadable file (a .zip pack, or a direct image URL).
+[sources.opengameart-cc0]
+adapter = "archive"
+enabled = false
+homepage = "https://opengameart.org/"
+terms_url = "https://opengameart.org/content/faq"
+rate_limit_per_sec = 0.5
+max_items = 20
+allowed_licenses = ["CC0-1.0"]
+require_pixel_art = true
+urls = [
+    # "https://opengameart.org/sites/default/files/<verified-cc0-pack>.zip",
+]
+attribution_template = "{title} — {license} (via OpenGameArt, {source_url})"
