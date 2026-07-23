@@ -53,8 +53,10 @@
   .palette-card .name small { color: var(--text-dim); font-weight: 400; }
   .toolbar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
   .hint { color: var(--text-dim); font-size: 12px; margin-top: 10px; }
-  .batch { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
-  .batch .stage { cursor: pointer; }
+  .batch { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; align-items: flex-start; }
+  .result-card { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .result-card .stage { cursor: pointer; }
+  .result-actions { display: flex; gap: 6px; }
 </style>
 </head>
 <body>
@@ -194,7 +196,7 @@ const state = {
   paletteId: "sweetie16",
   activeColor: "#ffcd75",
   gen: { prompt: "a brave knight", size: 32, seed: 42, symmetry: true, batch: 1, results: [] },
-  editor: { px: null, tool: "pencil", scale: 16, undo: [] },
+  editor: { px: null, prompt: "untitled", seed: 0, tool: "pencil", scale: 16, undo: [] },
 };
 const palette = () => PALETTES.find(p => p.id === state.paletteId) || PALETTES[0];
 const sidebar = document.getElementById("sidebar");
@@ -223,13 +225,19 @@ function renderGenerate() {
   const draw = () => {
     out.innerHTML = "";
     g.results.forEach((px, i) => {
-      const wrap = document.createElement("div"); wrap.className = "stage";
+      const seed = g.seed + i;
+      const card = document.createElement("div"); card.className = "result-card";
+      const stage = document.createElement("div"); stage.className = "stage"; stage.title = "open in editor";
       const cv = document.createElement("canvas"); drawGrid(cv, px, Math.max(4, Math.floor(320 / px.length)));
-      wrap.title = "click to edit · double-click to download PNG";
-      wrap.appendChild(cv);
-      wrap.onclick = () => { openInEditor(px); };
-      wrap.ondblclick = (e) => { e.stopPropagation(); exportPng(px, 8, `${sanitize(g.prompt)}_${i}.png`); };
-      out.appendChild(wrap);
+      stage.appendChild(cv); stage.onclick = () => openInEditor(px, g.prompt, seed);
+      const row = document.createElement("div"); row.className = "result-actions";
+      const editBtn = document.createElement("button"); editBtn.className = "small"; editBtn.textContent = "Edit";
+      editBtn.onclick = () => openInEditor(px, g.prompt, seed);
+      const dlBtn = document.createElement("button"); dlBtn.className = "small"; dlBtn.textContent = "Download PNG";
+      dlBtn.title = fileName(g.prompt, seed);
+      dlBtn.onclick = () => exportPng(px, 8, fileName(g.prompt, seed));
+      row.append(editBtn, dlBtn); card.append(stage, row);
+      out.appendChild(card);
     });
     if (!g.results.length) out.innerHTML = `<p class="hint">Press Generate to forge some sprites.</p>`;
   };
@@ -251,8 +259,10 @@ function renderGenerate() {
 }
 
 /* ---------- Editor view ---------- */
-function openInEditor(px) {
+function openInEditor(px, prompt, seed) {
   state.editor.px = px.map(r => r.slice());
+  if (prompt != null) state.editor.prompt = prompt;
+  if (seed != null) state.editor.seed = seed;
   state.editor.undo = [];
   state.view = "editor"; setActiveNav(); renderEditor();
 }
@@ -300,7 +310,7 @@ function renderEditor() {
   document.getElementById("e-color").oninput = (ev) => { state.activeColor = ev.target.value; };
   document.getElementById("e-undo").onclick = () => { if (e.undo.length) { e.px = e.undo.pop(); redraw(); } };
   document.getElementById("e-clear").onclick = () => { e.undo.push(e.px.map(r => r.slice())); e.px = e.px.map(r => r.map(() => null)); redraw(); };
-  document.getElementById("e-export").onclick = () => exportPng(e.px, +document.getElementById("e-scale").value, "pixelforge_edit.png");
+  document.getElementById("e-export").onclick = () => exportPng(e.px, +document.getElementById("e-scale").value, fileName(e.prompt, e.seed));
 }
 function floodFill(px, x, y, color) {
   const target = px[y][x];
@@ -332,6 +342,12 @@ function renderPalettes() {
 
 /* ---------- shell ---------- */
 function sanitize(s) { return (s || "sprite").trim().replace(/\W+/g, "_").slice(0, 40) || "sprite"; }
+function timeStamp() {
+  const d = new Date(), p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+// pixelforge_<prompt>_<YYYYMMDD-HHMMSS>_seed<seed>.png
+function fileName(prompt, seed) { return `pixelforge_${sanitize(prompt)}_${timeStamp()}_seed${seed}.png`; }
 function setActiveNav() {
   document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.view === state.view));
 }
